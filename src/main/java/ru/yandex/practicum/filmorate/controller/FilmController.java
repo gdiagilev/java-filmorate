@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.RestController;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
@@ -19,8 +20,15 @@ public class FilmController {
     @PostMapping
     public Film addFilm(@RequestBody Film film) {
         log.info("Получен запрос на добавление фильма: {}", film);
+
+        if (film == null) {
+            log.warn("Ошибка: пустое тело запроса при добавлении фильма");
+            throw new ValidationException("Тело запроса не может быть пустым");
+        }
+
         FilmValidator.validate(film);
         films.add(film);
+
         log.info("Фильм успешно добавлен: id={}", film.getId());
         return film;
     }
