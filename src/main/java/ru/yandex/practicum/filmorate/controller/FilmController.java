@@ -7,16 +7,14 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/films")
 public class FilmController {
 
-    private final List<Film> films = new ArrayList<>();
+    private final Map<Integer, Film> films = new HashMap<>();
     private int nextFilmId = 1;
 
     @PostMapping
@@ -31,7 +29,7 @@ public class FilmController {
         FilmValidator.validate(film);
 
         film.setId(nextFilmId++);
-        films.add(film);
+        films.put(film.getId(), film);
 
         log.info("Фильм успешно добавлен: id={}", film.getId());
         return film;
@@ -48,17 +46,12 @@ public class FilmController {
 
         FilmValidator.validate(film);
 
-        Optional<Film> existing = films.stream()
-                .filter(f -> f.getId() == film.getId())
-                .findFirst();
-
-        if (existing.isEmpty()) {
+        if (!films.containsKey(film.getId())) {
             log.warn("Фильм с id={} не найден", film.getId());
             throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
         }
 
-        films.remove(existing.get());
-        films.add(film);
+        films.put(film.getId(), film);
 
         log.info("Фильм успешно обновлён: id={}", film.getId());
         return film;
@@ -67,6 +60,6 @@ public class FilmController {
     @GetMapping
     public List<Film> getAllFilms() {
         log.info("Получен запрос на получение списка всех фильмов ({} шт.)", films.size());
-        return films;
+        return new ArrayList<>(films.values());
     }
 }

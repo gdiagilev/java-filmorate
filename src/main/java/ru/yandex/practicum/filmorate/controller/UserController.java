@@ -7,16 +7,14 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.validation.UserValidator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
-    private final List<User> users = new ArrayList<>();
+    private final Map<Integer, User> users = new HashMap<>();
     private int nextUserId = 1;
 
     @PostMapping
@@ -31,7 +29,7 @@ public class UserController {
         UserValidator.validate(user);
 
         user.setId(nextUserId++);
-        users.add(user);
+        users.put(user.getId(), user);
 
         log.info("Пользователь успешно создан: id={}", user.getId());
         return user;
@@ -48,17 +46,12 @@ public class UserController {
 
         UserValidator.validate(user);
 
-        Optional<User> existing = users.stream()
-                .filter(u -> u.getId() == user.getId())
-                .findFirst();
-
-        if (existing.isEmpty()) {
+        if (!users.containsKey(user.getId())) {
             log.warn("Пользователь с id={} не найден", user.getId());
             throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
         }
 
-        users.remove(existing.get());
-        users.add(user);
+        users.put(user.getId(), user);
 
         log.info("Пользователь успешно обновлён: id={}", user.getId());
         return user;
@@ -67,6 +60,6 @@ public class UserController {
     @GetMapping
     public List<User> getAllUsers() {
         log.info("Получен запрос на получение всех пользователей ({} шт.)", users.size());
-        return users;
+        return new ArrayList<>(users.values());
     }
 }
