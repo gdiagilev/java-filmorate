@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import java.time.LocalDate;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.util.List;
 
@@ -15,10 +17,12 @@ public class UserService {
     private final UserStorage userStorage;
 
     public User create(User user) {
+        validate(user);
         return userStorage.add(user);
     }
 
     public User update(User user) {
+        validate(user);
         return userStorage.update(user);
     }
 
@@ -30,6 +34,28 @@ public class UserService {
         return userStorage.getById(id)
                 .orElseThrow(() ->
                         new NotFoundException("Пользователь с id=" + id + " не найден"));
+    }
+
+    private void validate(User user) {
+        if (user == null) {
+            throw new ValidationException("Пользователь не может быть null");
+        }
+
+        if (user.getEmail() == null || !user.getEmail().contains("@")) {
+            throw new ValidationException("Некорректный email");
+        }
+
+        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
+            throw new ValidationException("Некорректный login");
+        }
+
+        if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
+            throw new ValidationException("Дата рождения не может быть в будущем");
+        }
+
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
     }
 
     public void addFriend(int userId, int friendId) {
