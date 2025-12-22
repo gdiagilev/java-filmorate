@@ -1,9 +1,9 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
@@ -12,54 +12,45 @@ import java.util.*;
 @Slf4j
 @RestController
 @RequestMapping("/films")
+@RequiredArgsConstructor
 public class FilmController {
 
-    private final Map<Integer, Film> films = new HashMap<>();
-    private int nextFilmId = 1;
+    private final FilmService filmService;
 
     @PostMapping
-    public Film addFilm(@RequestBody Film film) {
-        log.info("Получен запрос на добавление фильма: {}", film);
-
-        if (film == null) {
-            log.warn("Ошибка: пустое тело запроса при добавлении фильма");
-            throw new ValidationException("Тело запроса не может быть пустым");
-        }
-
+    public Film add(@RequestBody Film film) {
         FilmValidator.validate(film);
-
-        film.setId(nextFilmId++);
-        films.put(film.getId(), film);
-
-        log.info("Фильм успешно добавлен: id={}", film.getId());
-        return film;
+        return filmService.create(film);
     }
 
     @PutMapping
-    public Film updateFilm(@RequestBody Film film) {
-        log.info("Получен запрос на обновление фильма: {}", film);
-
-        if (film == null) {
-            log.warn("Ошибка: пустое тело запроса при обновлении фильма");
-            throw new ValidationException("Тело запроса не может быть пустым");
-        }
-
+    public Film update(@RequestBody Film film) {
         FilmValidator.validate(film);
-
-        if (!films.containsKey(film.getId())) {
-            log.warn("Фильм с id={} не найден", film.getId());
-            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
-        }
-
-        films.put(film.getId(), film);
-
-        log.info("Фильм успешно обновлён: id={}", film.getId());
-        return film;
+        return filmService.update(film);
     }
 
     @GetMapping
-    public List<Film> getAllFilms() {
-        log.info("Получен запрос на получение списка всех фильмов ({} шт.)", films.size());
-        return new ArrayList<>(films.values());
+    public List<Film> getAll() {
+        return filmService.getAll();
+    }
+
+    @GetMapping("/{id}")
+    public Film getById(@PathVariable int id) {
+        return filmService.getById(id);
+    }
+
+    @PutMapping("/{id}/like/{userId}")
+    public void addLike(@PathVariable int id, @PathVariable int userId) {
+        filmService.addLike(id, userId);
+    }
+
+    @DeleteMapping("/{id}/like/{userId}")
+    public void removeLike(@PathVariable int id, @PathVariable int userId) {
+        filmService.removeLike(id, userId);
+    }
+
+    @GetMapping("/popular")
+    public List<Film> getPopular(@RequestParam(defaultValue = "10") int count) {
+        return filmService.getPopular(count);
     }
 }
