@@ -17,21 +17,19 @@ public class UserService {
     private final UserStorage userStorage;
 
     private void validate(User user) {
-        if (user == null) {
-            throw new ValidationException("Пользователь не может быть null");
-        }
-        if (user.getEmail() == null || !user.getEmail().contains("@")) {
+        if (user == null) throw new ValidationException("Пользователь не может быть null");
+
+        if (user.getEmail() == null || !user.getEmail().contains("@"))
             throw new ValidationException("Некорректный email");
-        }
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
+
+        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" "))
             throw new ValidationException("Некорректный login");
-        }
-        if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
+
+        if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now()))
             throw new ValidationException("Дата рождения не может быть в будущем");
-        }
-        if (user.getName() == null || user.getName().isBlank()) {
+
+        if (user.getName() == null || user.getName().isBlank())
             user.setName(user.getLogin());
-        }
     }
 
     public User create(User user) {
