@@ -35,36 +35,36 @@ public class UserService {
     }
 
     public void addFriend(int userId, int friendId) {
-        Optional<User> user = userStorage.getById(userId);
-        Optional<User> friend = userStorage.getById(friendId);
+        User user = getById(userId);
+        User friend = getById(friendId);
 
-        user.get().getFriends().add(friendId);
-        friend.get().getFriends().add(userId);
+        user.getFriends().add(friendId);
+        friend.getFriends().add(userId);
     }
 
     public void removeFriend(int userId, int friendId) {
-        Optional<User> user = userStorage.getById(userId);
-        Optional<User> friend = userStorage.getById(friendId);
+        User user = getById(userId);
+        User friend = getById(friendId);
 
-        user.get().getFriends().remove(friendId);
-        friend.get().getFriends().remove(userId);
+        user.getFriends().remove(friendId);
+        friend.getFriends().remove(userId);
     }
 
-    public List<Optional<User>> getFriends(int userId) {
-        Optional<User> user = userStorage.getById(userId);
+    public List<User> getFriends(int userId) {
+        User user = getById(userId);
 
-        return user.get().getFriends().stream()
-                .map(userStorage::getById)
+        return user.getFriends().stream()
+                .map(this::getById)
                 .toList();
     }
 
-    public List<Optional<User>> getCommonFriends(int userId, int otherId) {
-        Optional<User> user = userStorage.getById(userId);
-        Optional<User> other = userStorage.getById(otherId);
+    public List<User> getCommonFriends(int userId, int otherId) {
+        User user = getById(userId);
+        User other = getById(otherId);
 
-        return user.get().getFriends().stream()
-                .filter(other.get().getFriends()::contains)
-                .map(userStorage::getById)
-                .collect(Collectors.toList());
+        return user.getFriends().stream()
+                .filter(other.getFriends()::contains)
+                .map(this::getById)
+                .toList();
     }
 }
