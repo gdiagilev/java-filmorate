@@ -1,68 +1,85 @@
 package ru.yandex.practicum.filmorate;
 
-import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.validation.FilmValidator;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class FilmValidatorTest {
+class FilmValidationTest {
+
+    private static Validator validator;
+
+    @BeforeAll
+    static void setUpValidator() {
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
+    }
 
     @Test
     void shouldValidateCorrectFilm() {
         Film film = new Film();
-        film.setId(1);
         film.setName("Test");
         film.setDescription("Normal description");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
         film.setDuration(120);
 
-        assertDoesNotThrow(() -> FilmValidator.validate(film));
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+        assertTrue(violations.isEmpty());
     }
 
     @Test
-    void shouldThrowIfNameIsEmpty() {
+    void shouldFailIfNameIsBlank() {
         Film film = new Film();
-        film.setName("  ");
+        film.setName("   ");
         film.setDuration(10);
 
-        assertThrows(ValidationException.class,
-                () -> FilmValidator.validate(film));
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+        assertFalse(violations.isEmpty());
     }
 
     @Test
-    void shouldThrowIfDescriptionTooLong() {
+    void shouldFailIfDescriptionTooLong() {
         Film film = new Film();
         film.setName("Film");
-        film.setDescription("A".repeat(201)); // 201 символ
+        film.setDescription("A".repeat(201));
         film.setDuration(10);
 
-        assertThrows(ValidationException.class,
-                () -> FilmValidator.validate(film));
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+        assertFalse(violations.isEmpty());
     }
 
     @Test
-    void shouldThrowIfReleaseDateTooEarly() {
+    void shouldFailIfReleaseDateTooEarly() {
         Film film = new Film();
         film.setName("Film");
         film.setDuration(10);
         film.setReleaseDate(LocalDate.of(1800, 1, 1));
 
-        assertThrows(ValidationException.class,
-                () -> FilmValidator.validate(film));
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+        assertFalse(violations.isEmpty());
     }
 
     @Test
-    void shouldThrowIfDurationNotPositive() {
+    void shouldFailIfDurationNotPositive() {
         Film film = new Film();
         film.setName("Film");
         film.setDuration(0);
 
-        assertThrows(ValidationException.class,
-                () -> FilmValidator.validate(film));
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+        assertFalse(violations.isEmpty());
     }
 
     @Test
@@ -72,7 +89,9 @@ class FilmValidatorTest {
         film.setDuration(10);
         film.setReleaseDate(LocalDate.of(1895, 12, 28));
 
-        assertDoesNotThrow(() -> FilmValidator.validate(film));
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+        assertTrue(violations.isEmpty());
     }
 
     @Test
@@ -82,6 +101,8 @@ class FilmValidatorTest {
         film.setDuration(10);
         film.setDescription("A".repeat(200));
 
-        assertDoesNotThrow(() -> FilmValidator.validate(film));
+        Set<ConstraintViolation<Film>> violations = validator.validate(film);
+
+        assertTrue(violations.isEmpty());
     }
 }
