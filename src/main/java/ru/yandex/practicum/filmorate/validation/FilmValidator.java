@@ -45,7 +45,7 @@ public class FilmValidator {
         }
 
         if (film.getGenres() == null) {
-            film.setGenres(new HashSet<>()); // если пусто — можно оставить пустой Set
+            film.setGenres(new HashSet<>());
         }
 
         Set<Genre> genres = film.getGenres();
