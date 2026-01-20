@@ -6,6 +6,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 @Slf4j
@@ -41,6 +42,10 @@ public class FilmValidator {
         if (film.getMpa() == null) {
             log.warn("Ошибка валидации фильма: MPA рейтинг не задан");
             throw new ValidationException("MPA рейтинг не задан");
+        }
+
+        if (film.getGenres() == null) {
+            film.setGenres(new HashSet<>()); // если пусто — можно оставить пустой Set
         }
 
         Set<Genre> genres = film.getGenres();
