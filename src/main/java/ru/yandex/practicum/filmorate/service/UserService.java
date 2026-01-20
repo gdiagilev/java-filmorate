@@ -3,12 +3,12 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
-import java.time.LocalDate;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -41,9 +41,10 @@ public class UserService {
         User user = getById(userId);
         User friend = getById(friendId);
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        user.getFriends().put(friendId, FriendshipStatus.PENDING);
+        friend.getFriends().put(userId, FriendshipStatus.CONFIRMED);
     }
+
 
     public void removeFriend(int userId, int friendId) {
         User user = getById(userId);
@@ -54,8 +55,9 @@ public class UserService {
     }
 
     public List<User> getFriends(int userId) {
-        return getById(userId).getFriends().stream()
-                .map(this::getById)
+        return getById(userId).getFriends().entrySet().stream()
+                .filter(e -> e.getValue() == FriendshipStatus.CONFIRMED)
+                .map(e -> getById(e.getKey()))
                 .toList();
     }
 
@@ -63,8 +65,11 @@ public class UserService {
         User user = getById(userId);
         User other = getById(otherId);
 
-        return user.getFriends().stream()
-                .filter(other.getFriends()::contains)
+        return user.getFriends().entrySet().stream()
+                .filter(e -> e.getValue() == FriendshipStatus.CONFIRMED)
+                .map(Map.Entry::getKey)
+                .filter(other.getFriends()::containsKey)
+                .filter(id -> other.getFriends().get(id) == FriendshipStatus.CONFIRMED)
                 .map(this::getById)
                 .toList();
     }

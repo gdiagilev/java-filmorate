@@ -5,13 +5,13 @@ import jakarta.validation.Payload;
 
 import java.lang.annotation.*;
 
-@Target({ ElementType.FIELD })
-@Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = ReleaseDateValidator.class)
 @Documented
+@Constraint(validatedBy = ReleaseDateValidator.class)
+@Target({ElementType.FIELD})
+@Retention(RetentionPolicy.RUNTIME)
 public @interface ReleaseDateNotBefore {
 
-    String message() default "Дата релиза не может быть раньше 28.12.1895";
+    String message() default "Дата релиза не может быть раньше 28 декабря 1895";
 
     Class<?>[] groups() default {};
 

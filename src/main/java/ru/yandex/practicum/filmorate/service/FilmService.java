@@ -4,11 +4,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,10 +26,7 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        // Проверяем, что фильм существует
-        if (filmStorage.getById(film.getId()) == null) {
-            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
-        }
+        getFilmOrThrow(film.getId());
         return filmStorage.update(film);
     }
 
@@ -35,15 +35,11 @@ public class FilmService {
     }
 
     public Film getById(int id) {
-        Film film = filmStorage.getById(id);
-        if (film == null) {
-            throw new NotFoundException("Фильм с id=" + id + " не найден");
-        }
-        return film;
+        return getFilmOrThrow(id);
     }
 
     public void addLike(int filmId, int userId) {
-        Film film = getById(filmId); // выбросит NotFoundException если не найден
+        Film film = getFilmOrThrow(filmId);
         if (userStorage.getById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
@@ -51,7 +47,7 @@ public class FilmService {
     }
 
     public void removeLike(int filmId, int userId) {
-        Film film = getById(filmId);
+        Film film = getFilmOrThrow(filmId);
         if (userStorage.getById(userId).isEmpty()) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
@@ -63,5 +59,21 @@ public class FilmService {
                 .sorted(Comparator.comparingInt((Film f) -> f.getLikes().size()).reversed())
                 .limit(count)
                 .collect(Collectors.toList());
+    }
+
+    private Film getFilmOrThrow(int id) {
+        Film film = filmStorage.getById(id);
+        if (film == null) {
+            throw new NotFoundException("Фильм с id=" + id + " не найден");
+        }
+        return film;
+    }
+
+    public Set<Genre> getFilmGenres(int filmId) {
+        return getFilmOrThrow(filmId).getGenres();
+    }
+
+    public MpaRating getFilmMpa(int filmId) {
+        return getFilmOrThrow(filmId).getMpa();
     }
 }
