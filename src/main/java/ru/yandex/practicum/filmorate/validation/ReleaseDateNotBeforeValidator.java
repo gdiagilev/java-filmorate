@@ -11,7 +11,7 @@ public class ReleaseDateNotBeforeValidator implements ConstraintValidator<Releas
 
     @Override
     public boolean isValid(LocalDate value, ConstraintValidatorContext context) {
-        if (value == null) return true; // null допустим, если не требуется @NotNull
+        if (value == null) return true;
         return !value.isBefore(MIN_DATE);
     }
 }

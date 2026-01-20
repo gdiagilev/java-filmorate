@@ -14,7 +14,6 @@ class FilmControllerEmptyRequestTest {
 
         FilmController controller = new FilmController(stubService);
 
-        // При прямом вызове метод будет работать с null, но @Valid не сработает без Spring
         assertThrows(NullPointerException.class, () -> controller.add(null));
     }
 }

@@ -20,6 +20,6 @@ public class Film {
 
     private Set<Integer> likes = new HashSet<>();
 
-    private MpaRating mpa;               // MPA рейтинг
-    private Set<Genre> genres = new HashSet<>(); // Жанры
+    private MpaRating mpa;
+    private Set<Genre> genres = new HashSet<>();
 }
