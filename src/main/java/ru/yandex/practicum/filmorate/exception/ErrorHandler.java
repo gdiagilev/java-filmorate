@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.util.Map;
 
 @RestControllerAdvice
-@ResponseStatus
 public class ErrorHandler {
 
     @ExceptionHandler(ValidationException.class)
@@ -34,5 +33,4 @@ public class ErrorHandler {
                 "error", "Произошла непредвиденная ошибка"
         );
     }
-
 }

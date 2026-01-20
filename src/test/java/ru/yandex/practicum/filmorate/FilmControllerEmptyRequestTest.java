@@ -14,6 +14,6 @@ class FilmControllerEmptyRequestTest {
 
         FilmController controller = new FilmController(stubService);
 
-        assertThrows(NullPointerException.class, () -> controller.add(null));
+        assertThrows(NullPointerException.class, () -> controller.create(null));
     }
 }
