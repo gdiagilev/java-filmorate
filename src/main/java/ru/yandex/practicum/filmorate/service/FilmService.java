@@ -8,6 +8,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
 import java.util.Comparator;
 import java.util.List;
@@ -22,11 +23,15 @@ public class FilmService {
     private final UserStorage userStorage;
 
     public Film create(Film film) {
+        FilmValidator.validate(film);
+        normalizeMpaAndGenres(film);
         return filmStorage.add(film);
     }
 
     public Film update(Film film) {
+        FilmValidator.validate(film);
         getFilmOrThrow(film.getId());
+        normalizeMpaAndGenres(film);
         return filmStorage.update(film);
     }
 
@@ -61,6 +66,14 @@ public class FilmService {
                 .collect(Collectors.toList());
     }
 
+    public Set<Genre> getFilmGenres(int filmId) {
+        return getFilmOrThrow(filmId).getGenres();
+    }
+
+    public MpaRating getFilmMpa(int filmId) {
+        return getFilmOrThrow(filmId).getMpa();
+    }
+
     private Film getFilmOrThrow(int id) {
         Film film = filmStorage.getById(id);
         if (film == null) {
@@ -69,11 +82,18 @@ public class FilmService {
         return film;
     }
 
-    public Set<Genre> getFilmGenres(int filmId) {
-        return getFilmOrThrow(filmId).getGenres();
-    }
+    private void normalizeMpaAndGenres(Film film) {
+        // MPA
+        if (film.getMpa() != null) {
+            film.setMpa(MpaRating.fromId(film.getMpa().getId()));
+        }
 
-    public MpaRating getFilmMpa(int filmId) {
-        return getFilmOrThrow(filmId).getMpa();
+        if (film.getGenres() != null) {
+            film.setGenres(
+                    film.getGenres().stream()
+                            .map(g -> Genre.fromId(g.getId()))
+                            .collect(Collectors.toSet())
+            );
+        }
     }
 }
