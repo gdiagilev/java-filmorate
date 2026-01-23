@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -14,6 +15,6 @@ class FilmControllerEmptyRequestTest {
 
         FilmController controller = new FilmController(stubService);
 
-        assertThrows(NullPointerException.class, () -> controller.create(null));
+        assertThrows(ValidationException.class, () -> controller.create(null));
     }
 }
