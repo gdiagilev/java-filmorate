@@ -6,6 +6,7 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.validation.UserValidator;
 
 import java.util.List;
 import java.util.Map;
@@ -17,11 +18,13 @@ public class UserService {
     private final UserStorage userStorage;
 
     public User create(User user) {
+        UserValidator.validate(user);
         fillNameIfEmpty(user);
         return userStorage.add(user);
     }
 
     public User update(User user) {
+        UserValidator.validate(user);
         getById(user.getId());
         fillNameIfEmpty(user);
         return userStorage.update(user);

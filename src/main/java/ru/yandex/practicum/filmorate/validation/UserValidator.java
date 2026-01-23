@@ -10,6 +10,9 @@ import java.time.LocalDate;
 public class UserValidator {
 
     public static void validate(User user) {
+        if (user == null) {
+            throw new ValidationException("Пользователь не может быть null");
+        }
 
         if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
             log.warn("Ошибка валидации пользователя: некорректный email '{}'", user.getEmail());
