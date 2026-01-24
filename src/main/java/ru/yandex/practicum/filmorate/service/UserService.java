@@ -3,12 +3,13 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.FriendshipStatus;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
-import java.time.LocalDate;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.validation.UserValidator;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -16,29 +17,16 @@ public class UserService {
 
     private final UserStorage userStorage;
 
-    private void validate(User user) {
-        if (user == null) throw new ValidationException("Пользователь не может быть null");
-
-        if (user.getEmail() == null || !user.getEmail().contains("@"))
-            throw new ValidationException("Некорректный email");
-
-        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" "))
-            throw new ValidationException("Некорректный login");
-
-        if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now()))
-            throw new ValidationException("Дата рождения не может быть в будущем");
-
-        if (user.getName() == null || user.getName().isBlank())
-            user.setName(user.getLogin());
-    }
-
     public User create(User user) {
-        validate(user);
+        UserValidator.validate(user);
+        fillNameIfEmpty(user);
         return userStorage.add(user);
     }
 
     public User update(User user) {
-        validate(user);
+        UserValidator.validate(user);
+        getById(user.getId());
+        fillNameIfEmpty(user);
         return userStorage.update(user);
     }
 
@@ -56,9 +44,10 @@ public class UserService {
         User user = getById(userId);
         User friend = getById(friendId);
 
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        user.getFriends().put(friendId, FriendshipStatus.PENDING);
+        friend.getFriends().put(userId, FriendshipStatus.CONFIRMED);
     }
+
 
     public void removeFriend(int userId, int friendId) {
         User user = getById(userId);
@@ -69,10 +58,9 @@ public class UserService {
     }
 
     public List<User> getFriends(int userId) {
-        User user = getById(userId);
-
-        return user.getFriends().stream()
-                .map(this::getById)
+        return getById(userId).getFriends().entrySet().stream()
+                .filter(e -> e.getValue() == FriendshipStatus.CONFIRMED)
+                .map(e -> getById(e.getKey()))
                 .toList();
     }
 
@@ -80,9 +68,18 @@ public class UserService {
         User user = getById(userId);
         User other = getById(otherId);
 
-        return user.getFriends().stream()
-                .filter(other.getFriends()::contains)
+        return user.getFriends().entrySet().stream()
+                .filter(e -> e.getValue() == FriendshipStatus.CONFIRMED)
+                .map(Map.Entry::getKey)
+                .filter(other.getFriends()::containsKey)
+                .filter(id -> other.getFriends().get(id) == FriendshipStatus.CONFIRMED)
                 .map(this::getById)
                 .toList();
+    }
+
+    private void fillNameIfEmpty(User user) {
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
     }
 }

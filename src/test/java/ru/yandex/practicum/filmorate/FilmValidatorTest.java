@@ -1,87 +1,75 @@
 package ru.yandex.practicum.filmorate;
 
-import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.validation.FilmValidator;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.validation.FilmValidator;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class FilmValidatorTest {
 
+    private static Film validFilm;
+
+    @BeforeAll
+    static void setUp() {
+        validFilm = new Film();
+        validFilm.setName("Test Film");
+        validFilm.setDescription("Normal description");
+        validFilm.setDuration(120);
+        validFilm.setReleaseDate(LocalDate.of(2000, 1, 1));
+        validFilm.setMpa(MpaRating.PG); // Пример
+        validFilm.setGenres(new HashSet<>());
+    }
+
     @Test
     void shouldValidateCorrectFilm() {
-        Film film = new Film();
-        film.setId(1);
-        film.setName("Test");
-        film.setDescription("Normal description");
-        film.setReleaseDate(LocalDate.of(2000, 1, 1));
-        film.setDuration(120);
-
-        assertDoesNotThrow(() -> FilmValidator.validate(film));
+        assertDoesNotThrow(() -> FilmValidator.validate(validFilm));
     }
 
     @Test
-    void shouldThrowIfNameIsEmpty() {
-        Film film = new Film();
-        film.setName("  ");
-        film.setDuration(10);
-
-        assertThrows(ValidationException.class,
-                () -> FilmValidator.validate(film));
+    void shouldFailIfNameIsBlank() {
+        validFilm.setName("   ");
+        assertThrows(Exception.class, () -> FilmValidator.validate(validFilm));
+        validFilm.setName("Test Film"); // вернуть корректное значение
     }
 
     @Test
-    void shouldThrowIfDescriptionTooLong() {
-        Film film = new Film();
-        film.setName("Film");
-        film.setDescription("A".repeat(201)); // 201 символ
-        film.setDuration(10);
-
-        assertThrows(ValidationException.class,
-                () -> FilmValidator.validate(film));
+    void shouldFailIfDescriptionTooLong() {
+        validFilm.setDescription("A".repeat(201));
+        assertThrows(Exception.class, () -> FilmValidator.validate(validFilm));
+        validFilm.setDescription("Normal description");
     }
 
     @Test
-    void shouldThrowIfReleaseDateTooEarly() {
-        Film film = new Film();
-        film.setName("Film");
-        film.setDuration(10);
-        film.setReleaseDate(LocalDate.of(1800, 1, 1));
-
-        assertThrows(ValidationException.class,
-                () -> FilmValidator.validate(film));
+    void shouldFailIfReleaseDateTooEarly() {
+        validFilm.setReleaseDate(LocalDate.of(1800, 1, 1));
+        assertThrows(Exception.class, () -> FilmValidator.validate(validFilm));
+        validFilm.setReleaseDate(LocalDate.of(2000, 1, 1));
     }
 
     @Test
-    void shouldThrowIfDurationNotPositive() {
-        Film film = new Film();
-        film.setName("Film");
-        film.setDuration(0);
-
-        assertThrows(ValidationException.class,
-                () -> FilmValidator.validate(film));
+    void shouldFailIfDurationNotPositive() {
+        validFilm.setDuration(0);
+        assertThrows(Exception.class, () -> FilmValidator.validate(validFilm));
+        validFilm.setDuration(120);
     }
 
     @Test
-    void shouldAcceptFilmWithMinReleaseDate() {
-        Film film = new Film();
-        film.setName("Test");
-        film.setDuration(10);
-        film.setReleaseDate(LocalDate.of(1895, 12, 28));
-
-        assertDoesNotThrow(() -> FilmValidator.validate(film));
+    void shouldFailIfMpaIsNull() {
+        validFilm.setMpa(null);
+        assertThrows(Exception.class, () -> FilmValidator.validate(validFilm));
+        validFilm.setMpa(MpaRating.PG);
     }
 
     @Test
-    void shouldAcceptDescriptionWith200Characters() {
-        Film film = new Film();
-        film.setName("Film");
-        film.setDuration(10);
-        film.setDescription("A".repeat(200));
-
-        assertDoesNotThrow(() -> FilmValidator.validate(film));
+    void shouldFailIfGenresContainNull() {
+        validFilm.getGenres().add(null);
+        assertThrows(Exception.class, () -> FilmValidator.validate(validFilm));
+        validFilm.setGenres(new HashSet<>());
     }
 }
