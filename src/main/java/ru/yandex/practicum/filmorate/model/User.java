@@ -1,27 +1,27 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PastOrPresent;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.*;
 import lombok.Data;
+
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 
 @Data
 public class User {
     private int id;
 
-    @NotBlank
     @Email
+    @NotBlank
     private String email;
 
     @NotBlank
     private String login;
+
+    @NotBlank
     private String name;
 
-    @PastOrPresent
+    @NotNull
+    @Past
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate birthday;
-
-    private Map<Integer, FriendshipStatus> friends = new HashMap<>();
 }
