@@ -5,8 +5,8 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class Film {
@@ -30,7 +30,7 @@ public class Film {
     @NotNull
     private MpaRating mpa;
 
-    private Set<Genre> genres = new HashSet<>();
+    private List<Genre> genres = new ArrayList<>();
 
-    private Set<Integer> likes = new HashSet<>();
+    private List<Integer> likes = new ArrayList<>();
 }
