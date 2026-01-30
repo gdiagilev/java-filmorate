@@ -8,6 +8,7 @@ import java.time.LocalDate;
 
 @Data
 public class User {
+
     private int id;
 
     @Email
@@ -17,11 +18,10 @@ public class User {
     @NotBlank
     private String login;
 
-    @NotBlank
     private String name;
 
     @NotNull
-    @Past
+    @PastOrPresent(message = "Дата рождения не может быть в будущем")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate birthday;
 }
