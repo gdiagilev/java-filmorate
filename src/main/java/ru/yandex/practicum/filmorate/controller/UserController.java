@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -15,9 +15,15 @@ public class UserController {
 
     private final UserService userService;
 
-    @GetMapping
-    public List<User> getAll() {
-        return userService.getAll();
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public User create(@RequestBody User user) {
+        return userService.create(user);
+    }
+
+    @PutMapping
+    public User update(@RequestBody User user) {
+        return userService.update(user);
     }
 
     @GetMapping("/{id}")
@@ -25,22 +31,19 @@ public class UserController {
         return userService.getById(id);
     }
 
-    @PostMapping
-    public User create(@Valid @RequestBody User user) {
-        return userService.create(user);
-    }
-
-    @PutMapping
-    public User update(@Valid @RequestBody User user) {
-        return userService.update(user);
+    @GetMapping
+    public List<User> getAll() {
+        return userService.getAll();
     }
 
     @PutMapping("/{id}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT) // 204
     public void addFriend(@PathVariable int id, @PathVariable int friendId) {
         userService.addFriend(id, friendId);
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT) // 204
     public void removeFriend(@PathVariable int id, @PathVariable int friendId) {
         userService.removeFriend(id, friendId);
     }
@@ -54,4 +57,5 @@ public class UserController {
     public List<User> getCommonFriends(@PathVariable int id, @PathVariable int otherId) {
         return userService.getCommonFriends(id, otherId);
     }
+
 }
