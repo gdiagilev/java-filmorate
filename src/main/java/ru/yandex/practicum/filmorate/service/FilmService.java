@@ -60,7 +60,6 @@ public class FilmService {
         if (film.getMpa() == null)
             throw new IllegalArgumentException("MPA рейтинг фильма должен быть указан");
 
-        // Проверяем существование MPA
         try {
             MpaRating.fromId(film.getMpa().getId());
         } catch (IllegalArgumentException e) {

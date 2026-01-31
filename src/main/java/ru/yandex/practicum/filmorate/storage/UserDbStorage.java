@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.storage;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
@@ -85,16 +84,13 @@ public class UserDbStorage implements UserStorage {
         });
     }
 
-    // ----------- Дружба ------------
 
     @Override
     public void addFriend(int userId, int friendId) {
-        // Проверяем, есть ли такая запись
         String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
-        if (count != null && count > 0) return; // уже есть, просто выходим
+        if (count != null && count > 0) return;
 
-        // Добавляем дружбу
         String sql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, userId, friendId);
     }
@@ -104,7 +100,6 @@ public class UserDbStorage implements UserStorage {
         String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql, userId, friendId);
     }
-
 
     @Override
     public List<User> getFriends(int userId) {
@@ -123,10 +118,6 @@ public class UserDbStorage implements UserStorage {
         }, userId);
     }
 
-
-
-
-
     @Override
     public List<User> getCommonFriends(int userId, int otherId) {
         String sql = "SELECT u.id, u.email, u.login, u.name, u.birthday " +
@@ -144,6 +135,4 @@ public class UserDbStorage implements UserStorage {
             return u;
         }, userId, otherId);
     }
-
-
 }

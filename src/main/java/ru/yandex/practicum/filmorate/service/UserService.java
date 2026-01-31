@@ -15,32 +15,27 @@ public class UserService {
 
     private final UserDbStorage userStorage;
 
-    // Создание пользователя
     public User create(User user) {
         validateUser(user);
         return userStorage.add(user);
     }
 
-    // Обновление пользователя
     public User update(User user) {
         getById(user.getId());
         validateUser(user);
         return userStorage.update(user);
     }
 
-    // Получение пользователя по ID
     public User getById(int id) {
         return userStorage.getById(id)
                 .orElseThrow(() ->
                         new NotFoundException("Пользователь с id=" + id + " не найден"));
     }
 
-    // Получение всех пользователей
     public List<User> getAll() {
         return userStorage.getAll();
     }
 
-    // Добавление друга
     public void addFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
@@ -57,17 +52,11 @@ public class UserService {
         userStorage.removeFriend(userId, friendId);
     }
 
-
-
-
-
-    // Получение друзей пользователя
     public List<User> getFriends(int userId) {
         getById(userId);
         return userStorage.getFriends(userId);
     }
 
-    // Получение общих друзей двух пользователей
     public List<User> getCommonFriends(int userId, int otherId) {
         getById(userId);
         getById(otherId);
@@ -78,7 +67,6 @@ public class UserService {
         return friends1;
     }
 
-    // Валидация пользователя
     private void validateUser(User user) {
         if (user.getLogin() == null || user.getLogin().isBlank()) {
             throw new IllegalArgumentException("Логин не может быть пустым");
