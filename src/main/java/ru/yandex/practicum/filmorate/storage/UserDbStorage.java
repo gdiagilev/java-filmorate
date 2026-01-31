@@ -1,39 +1,42 @@
 package ru.yandex.practicum.filmorate.storage;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Component
-@RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
 
     private final JdbcTemplate jdbcTemplate;
+    private final SimpleJdbcInsert jdbcInsert;
+
+    public UserDbStorage(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.jdbcInsert = new SimpleJdbcInsert(jdbcTemplate)
+                .withTableName("users")
+                .usingGeneratedKeyColumns("id");
+    }
 
     @Override
     public User add(User user) {
-        String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
-        var keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
+        }
 
-        jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, user.getEmail());
-            ps.setString(2, user.getLogin());
-            ps.setString(3, user.getName());
-            ps.setDate(4, Date.valueOf(user.getBirthday()));
-            return ps;
-        }, keyHolder);
-
-        user.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
+        Number id = jdbcInsert.executeAndReturnKey(new HashMap<>() {{
+            put("email", user.getEmail());
+            put("login", user.getLogin());
+            put("name", user.getName());
+            put("birthday", Date.valueOf(user.getBirthday()));
+        }});
+        user.setId(id.intValue());
         return user;
     }
 
@@ -47,83 +50,105 @@ public class UserDbStorage implements UserStorage {
                 Date.valueOf(user.getBirthday()),
                 user.getId()
         );
-
         if (updated == 0) {
-            throw new NotFoundException("Пользователь с id=" + user.getId() + " не найден");
+            throw new RuntimeException("User not found with id " + user.getId());
         }
-
         return user;
     }
 
     @Override
     public Optional<User> getById(int id) {
-        String sql = "SELECT * FROM users WHERE id = ?";
+        String sql = "SELECT id, email, login, name, birthday FROM users WHERE id = ?";
         List<User> users = jdbcTemplate.query(sql, (rs, rowNum) -> {
-            User user = new User();
-            user.setId(rs.getInt("id"));
-            user.setEmail(rs.getString("email"));
-            user.setLogin(rs.getString("login"));
-            user.setName(rs.getString("name"));
-            user.setBirthday(rs.getDate("birthday").toLocalDate());
-            return user;
+            User u = new User();
+            u.setId(rs.getInt("id"));
+            u.setEmail(rs.getString("email"));
+            u.setLogin(rs.getString("login"));
+            u.setName(rs.getString("name"));
+            u.setBirthday(rs.getDate("birthday").toLocalDate());
+            return u;
         }, id);
-
-        if (users.isEmpty()) {
-            return Optional.empty();
-        }
-
-        return Optional.of(users.get(0));
+        return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
     }
 
     @Override
     public List<User> getAll() {
-        String sql = "SELECT * FROM users";
+        String sql = "SELECT id, email, login, name, birthday FROM users";
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
-            User user = new User();
-            user.setId(rs.getInt("id"));
-            user.setEmail(rs.getString("email"));
-            user.setLogin(rs.getString("login"));
-            user.setName(rs.getString("name"));
-            user.setBirthday(rs.getDate("birthday").toLocalDate());
-            return user;
+            User u = new User();
+            u.setId(rs.getInt("id"));
+            u.setEmail(rs.getString("email"));
+            u.setLogin(rs.getString("login"));
+            u.setName(rs.getString("name"));
+            u.setBirthday(rs.getDate("birthday").toLocalDate());
+            return u;
         });
     }
 
+    // ----------- Дружба ------------
+
     @Override
     public void addFriend(int userId, int friendId) {
-        // Проверка, что оба пользователя существуют
-        String checkSql = "SELECT COUNT(*) FROM users WHERE id = ?";
-        Integer count1 = jdbcTemplate.queryForObject(checkSql, Integer.class, userId);
-        Integer count2 = jdbcTemplate.queryForObject(checkSql, Integer.class, friendId);
+        // Проверяем, есть ли такая запись
+        String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
+        if (count != null && count > 0) return; // уже есть, просто выходим
 
-        if (count1 == null || count1 == 0 || count2 == null || count2 == 0) {
-            throw new NotFoundException("Пользователь не найден");
-        }
-
-        // Односторонняя дружба: вставляем запись только если её нет
-        String sql = "MERGE INTO friends (user_id, friend_id) KEY(user_id, friend_id) VALUES (?, ?)";
+        // Добавляем дружбу
+        String sql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
     public void removeFriend(int userId, int friendId) {
-        String sql = "DELETE FROM friends WHERE user_id = ? AND friend_id = ?";
+        String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
+        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
+        if (count == null || count == 0) {
+            throw new RuntimeException("Friendship not found");
+        }
+
+        String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql, userId, friendId);
     }
 
     @Override
     public List<User> getFriends(int userId) {
-        String sql = "SELECT u.* FROM users u " +
-                "JOIN friends f ON u.id = f.friend_id " +
+        String sql = "SELECT u.id, u.email, u.login, u.name, u.birthday " +
+                "FROM users u " +
+                "JOIN friendships f ON u.id = f.friend_id " +
                 "WHERE f.user_id = ?";
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
-            User user = new User();
-            user.setId(rs.getInt("id"));
-            user.setEmail(rs.getString("email"));
-            user.setLogin(rs.getString("login"));
-            user.setName(rs.getString("name"));
-            user.setBirthday(rs.getDate("birthday").toLocalDate());
-            return user;
+            User u = new User();
+            u.setId(rs.getInt("id"));
+            u.setEmail(rs.getString("email"));
+            u.setLogin(rs.getString("login"));
+            u.setName(rs.getString("name"));
+            u.setBirthday(rs.getDate("birthday").toLocalDate());
+            return u;
         }, userId);
     }
+
+
+
+
+
+    @Override
+    public List<User> getCommonFriends(int userId, int otherId) {
+        String sql = "SELECT u.id, u.email, u.login, u.name, u.birthday " +
+                "FROM users u " +
+                "JOIN friendships f1 ON u.id = f1.friend_id " +
+                "JOIN friendships f2 ON u.id = f2.friend_id " +
+                "WHERE f1.user_id = ? AND f2.user_id = ?";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            User u = new User();
+            u.setId(rs.getInt("id"));
+            u.setEmail(rs.getString("email"));
+            u.setLogin(rs.getString("login"));
+            u.setName(rs.getString("name"));
+            u.setBirthday(rs.getDate("birthday").toLocalDate());
+            return u;
+        }, userId, otherId);
+    }
+
+
 }
