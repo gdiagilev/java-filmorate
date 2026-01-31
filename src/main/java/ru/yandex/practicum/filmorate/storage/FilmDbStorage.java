@@ -38,14 +38,12 @@ public class FilmDbStorage implements FilmStorage {
             return ps;
         }, keyHolder);
 
-        // безопасно устанавливаем ID
         Number key = keyHolder.getKey();
         if (key == null) {
             throw new IllegalStateException("Ошибка при получении сгенерированного ID для фильма");
         }
         film.setId(key.intValue());
 
-        // если есть жанры, их нужно добавить в связующую таблицу
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             String sqlGenre = "MERGE INTO film_genres (film_id, genre_id) KEY(film_id, genre_id) VALUES (?, ?)";
             film.getGenres().forEach(genre ->
@@ -58,7 +56,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film update(Film film) {
-        getById(film.getId()); // проверка существования
+        getById(film.getId());
         validateMpaAndGenres(film);
 
         String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
@@ -158,15 +156,13 @@ public class FilmDbStorage implements FilmStorage {
         }, count);
     }
 
-    // -------------------- Вспомогательные методы --------------------
-
     private void updateFilmGenres(Film film) {
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
 
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             Set<Integer> added = new HashSet<>();
             for (Genre genre : film.getGenres()) {
-                if (added.add(genre.getId())) { // убираем дубли
+                if (added.add(genre.getId())) {
                     jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)",
                             film.getId(), genre.getId());
                 }
@@ -183,7 +179,6 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void validateMpaAndGenres(Film film) {
-        // Проверка MPA
         if (film.getMpa() != null) {
             try {
                 MpaRating.fromId(film.getMpa().getId());
@@ -192,7 +187,6 @@ public class FilmDbStorage implements FilmStorage {
             }
         }
 
-        // Проверка жанров и удаление дублей
         if (film.getGenres() != null) {
             Map<Integer, Genre> unique = new LinkedHashMap<>();
             for (Genre genre : film.getGenres()) {
