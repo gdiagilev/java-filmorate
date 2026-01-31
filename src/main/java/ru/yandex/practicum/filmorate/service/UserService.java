@@ -54,12 +54,9 @@ public class UserService {
     public void removeFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
-        try {
-            userStorage.removeFriend(userId, friendId);
-        } catch (RuntimeException e) {
-            throw new NotFoundException("Дружбы не существует");
-        }
+        userStorage.removeFriend(userId, friendId);
     }
+
 
 
 

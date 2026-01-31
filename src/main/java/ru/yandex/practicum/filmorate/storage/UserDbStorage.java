@@ -101,15 +101,10 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public void removeFriend(int userId, int friendId) {
-        String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
-        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
-        if (count == null || count == 0) {
-            throw new RuntimeException("Friendship not found");
-        }
-
         String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
         jdbcTemplate.update(sql, userId, friendId);
     }
+
 
     @Override
     public List<User> getFriends(int userId) {
