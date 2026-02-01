@@ -18,9 +18,7 @@ public class UserDbStorage implements UserStorage {
 
     public UserDbStorage(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
-        this.jdbcInsert = new SimpleJdbcInsert(jdbcTemplate)
-                .withTableName("users")
-                .usingGeneratedKeyColumns("id");
+        this.jdbcInsert = new SimpleJdbcInsert(jdbcTemplate).withTableName("users").usingGeneratedKeyColumns("id");
     }
 
     @Override
@@ -42,13 +40,7 @@ public class UserDbStorage implements UserStorage {
     @Override
     public User update(User user) {
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE id = ?";
-        int updated = jdbcTemplate.update(sql,
-                user.getEmail(),
-                user.getLogin(),
-                user.getName(),
-                Date.valueOf(user.getBirthday()),
-                user.getId()
-        );
+        int updated = jdbcTemplate.update(sql, user.getEmail(), user.getLogin(), user.getName(), Date.valueOf(user.getBirthday()), user.getId());
         if (updated == 0) {
             throw new RuntimeException("User not found with id " + user.getId());
         }
@@ -103,10 +95,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> getFriends(int userId) {
-        String sql = "SELECT u.id, u.email, u.login, u.name, u.birthday " +
-                "FROM users u " +
-                "JOIN friendships f ON u.id = f.friend_id " +
-                "WHERE f.user_id = ?";
+        String sql = "SELECT u.id, u.email, u.login, u.name, u.birthday " + "FROM users u " + "JOIN friendships f ON u.id = f.friend_id " + "WHERE f.user_id = ?";
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             User u = new User();
             u.setId(rs.getInt("id"));
@@ -120,11 +109,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public List<User> getCommonFriends(int userId, int otherId) {
-        String sql = "SELECT u.id, u.email, u.login, u.name, u.birthday " +
-                "FROM users u " +
-                "JOIN friendships f1 ON u.id = f1.friend_id " +
-                "JOIN friendships f2 ON u.id = f2.friend_id " +
-                "WHERE f1.user_id = ? AND f2.user_id = ?";
+        String sql = "SELECT u.id, u.email, u.login, u.name, u.birthday " + "FROM users u " + "JOIN friendships f1 ON u.id = f1.friend_id " + "JOIN friendships f2 ON u.id = f2.friend_id " + "WHERE f1.user_id = ? AND f2.user_id = ?";
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             User u = new User();
             u.setId(rs.getInt("id"));
