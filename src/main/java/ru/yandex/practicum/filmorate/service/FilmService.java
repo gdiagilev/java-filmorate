@@ -23,7 +23,7 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        filmStorage.getById(film.getId()); // проверка существования
+        filmStorage.getById(film.getId());
         validateFilm(film);
         return filmStorage.update(film);
     }
