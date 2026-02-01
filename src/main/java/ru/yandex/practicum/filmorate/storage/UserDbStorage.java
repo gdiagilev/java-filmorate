@@ -27,12 +27,13 @@ public class UserDbStorage implements UserStorage {
             user.setName(user.getLogin());
         }
 
-        Number id = jdbcInsert.executeAndReturnKey(new HashMap<>() {{
-            put("email", user.getEmail());
-            put("login", user.getLogin());
-            put("name", user.getName());
-            put("birthday", Date.valueOf(user.getBirthday()));
-        }});
+        HashMap<String, Object> values = new HashMap<>();
+        values.put("email", user.getEmail());
+        values.put("login", user.getLogin());
+        values.put("name", user.getName());
+        values.put("birthday", Date.valueOf(user.getBirthday()));
+
+        Number id = jdbcInsert.executeAndReturnKey(values);
         user.setId(id.intValue());
         return user;
     }
