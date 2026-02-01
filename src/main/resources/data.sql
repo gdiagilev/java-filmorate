@@ -1,4 +1,11 @@
+DELETE FROM film_likes;
+DELETE FROM film_genres;
+DELETE FROM friendships;
+DELETE FROM films;
+DELETE FROM users;
+DELETE FROM genres;
 DELETE FROM mpa;
+
 INSERT INTO mpa (id, name) VALUES
 (1, 'G'),
 (2, 'PG'),
@@ -6,7 +13,6 @@ INSERT INTO mpa (id, name) VALUES
 (4, 'R'),
 (5, 'NC-17');
 
-DELETE FROM genres;
 INSERT INTO genres (id, name) VALUES
 (1, 'Комедия'),
 (2, 'Драма'),
