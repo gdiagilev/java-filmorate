@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -16,23 +16,28 @@ public class GenreDbStorage implements GenreStorage {
 
     @Override
     public List<Genre> getAll() {
-        String sql = "SELECT * FROM genres";
-        return jdbcTemplate.query(sql, (rs, rowNum) ->
-                new Genre(rs.getInt("id"), rs.getString("name"))
-        );
+        String sql = "SELECT id, name FROM genres ORDER BY id";
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Genre genre = new Genre();
+            genre.setId(rs.getInt("id"));
+            genre.setName(rs.getString("name"));
+            return genre;
+        });
     }
 
     @Override
-    public Genre getById(int id) {
-        String sql = "SELECT * FROM genres WHERE id = ?";
-        List<Genre> genres = jdbcTemplate.query(sql, (rs, rowNum) ->
-                new Genre(rs.getInt("id"), rs.getString("name")), id
-        );
+    public Optional<Genre> getById(int id) {
+        String sql = "SELECT id, name FROM genres WHERE id = ?";
+        List<Genre> result = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Genre genre = new Genre();
+            genre.setId(rs.getInt("id"));
+            genre.setName(rs.getString("name"));
+            return genre;
+        }, id);
 
-        if (genres.isEmpty()) {
-            throw new NotFoundException("Жанр с id=" + id + " не найден");
+        if (result.isEmpty()) {
+            return Optional.empty();
         }
-
-        return genres.get(0);
+        return Optional.of(result.get(0));
     }
 }

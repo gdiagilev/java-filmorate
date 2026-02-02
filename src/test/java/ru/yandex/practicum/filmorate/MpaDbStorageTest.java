@@ -4,15 +4,17 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.MpaDbStorage;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@Transactional
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 class MpaDbStorageTest {
 
@@ -23,22 +25,26 @@ class MpaDbStorageTest {
         List<MpaRating> ratings = mpaDbStorage.getAll();
 
         assertEquals(5, ratings.size());
-        assertEquals("G", ratings.get(0).getName());
+
+        MpaRating gRating = ratings.stream()
+                .filter(r -> r.getId() == 1)
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("MPA G не найден"));
+
+        assertEquals("G", gRating.getName());
     }
 
     @Test
     void shouldGetMpaById() {
-        Optional<MpaRating> rating = mpaDbStorage.getById(3);
+        MpaRating rating = mpaDbStorage.getById(3)
+                .orElseThrow(() -> new NotFoundException("MPA с id=3 не найден"));
 
-        assertTrue(rating.isPresent());
-        assertEquals(3, rating.get().getId());
-        assertEquals("PG-13", rating.get().getName());
+        assertEquals(3, rating.getId());
+        assertEquals("PG-13", rating.getName());
     }
 
     @Test
     void shouldReturnEmptyIfMpaNotFound() {
-        Optional<MpaRating> rating = mpaDbStorage.getById(999);
-
-        assertTrue(rating.isEmpty());
+        assertTrue(mpaDbStorage.getById(999).isEmpty());
     }
 }
