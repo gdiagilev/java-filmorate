@@ -23,7 +23,7 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film add(Film film) {
-        validateMpaAndGenres(film);
+        removeDuplicateGenres(film);
 
         String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -44,12 +44,7 @@ public class FilmDbStorage implements FilmStorage {
         }
         film.setId(key.intValue());
 
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            String sqlGenre = "MERGE INTO film_genres (film_id, genre_id) KEY(film_id, genre_id) VALUES (?, ?)";
-            film.getGenres().forEach(genre ->
-                    jdbcTemplate.update(sqlGenre, film.getId(), genre.getId())
-            );
-        }
+        saveGenres(film);
 
         return film;
     }
@@ -57,7 +52,7 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film update(Film film) {
         getById(film.getId());
-        validateMpaAndGenres(film);
+        removeDuplicateGenres(film);
 
         String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
         jdbcTemplate.update(sql,
@@ -86,7 +81,12 @@ public class FilmDbStorage implements FilmStorage {
             f.setDescription(rs.getString("description"));
             f.setReleaseDate(rs.getDate("release_date").toLocalDate());
             f.setDuration(rs.getInt("duration"));
-            f.setMpa(new MpaRating(rs.getInt("mpa_id"), rs.getString("mpa_name")));
+
+            MpaRating mpa = new MpaRating();
+            mpa.setId(rs.getInt("mpa_id"));
+            mpa.setName(rs.getString("mpa_name"));
+            f.setMpa(mpa);
+
             f.setGenres(getGenresByFilmId(f.getId()));
             return f;
         }, id);
@@ -103,19 +103,22 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
                 "FROM films f JOIN mpa m ON f.mpa_id = m.id";
 
-        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> {
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Film f = new Film();
             f.setId(rs.getInt("id"));
             f.setName(rs.getString("name"));
             f.setDescription(rs.getString("description"));
             f.setReleaseDate(rs.getDate("release_date").toLocalDate());
             f.setDuration(rs.getInt("duration"));
-            f.setMpa(new MpaRating(rs.getInt("mpa_id"), rs.getString("mpa_name")));
+
+            MpaRating mpa = new MpaRating();
+            mpa.setId(rs.getInt("mpa_id"));
+            mpa.setName(rs.getString("mpa_name"));
+            f.setMpa(mpa);
+
             f.setGenres(getGenresByFilmId(f.getId()));
             return f;
         });
-
-        return films;
     }
 
     @Override
@@ -150,7 +153,12 @@ public class FilmDbStorage implements FilmStorage {
             f.setDescription(rs.getString("description"));
             f.setReleaseDate(rs.getDate("release_date").toLocalDate());
             f.setDuration(rs.getInt("duration"));
-            f.setMpa(new MpaRating(rs.getInt("mpa_id"), rs.getString("mpa_name")));
+
+            MpaRating mpa = new MpaRating();
+            mpa.setId(rs.getInt("mpa_id"));
+            mpa.setName(rs.getString("mpa_name"));
+            f.setMpa(mpa);
+
             f.setGenres(getGenresByFilmId(f.getId()));
             return f;
         }, count);
@@ -158,7 +166,10 @@ public class FilmDbStorage implements FilmStorage {
 
     private void updateFilmGenres(Film film) {
         jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
+        saveGenres(film);
+    }
 
+    private void saveGenres(Film film) {
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             Set<Integer> added = new HashSet<>();
             for (Genre genre : film.getGenres()) {
@@ -170,35 +181,31 @@ public class FilmDbStorage implements FilmStorage {
         }
     }
 
-    private List<Genre> getGenresByFilmId(int filmId) {
+    private Set<Genre> getGenresByFilmId(int filmId) {
         String sql = "SELECT g.id, g.name FROM genres g " +
                 "JOIN film_genres fg ON g.id = fg.genre_id " +
                 "WHERE fg.film_id = ? " +
                 "ORDER BY g.id";
-        return jdbcTemplate.query(sql, (rs, rowNum) -> new Genre(rs.getInt("id"), rs.getString("name")), filmId);
+        return new HashSet<>(
+                jdbcTemplate.query(sql, (rs, rowNum) -> {
+                    Genre genre = new Genre();
+                    genre.setId(rs.getInt("id"));
+                    genre.setName(rs.getString("name"));
+                    return genre;
+                }, filmId)
+        );
     }
 
-    private void validateMpaAndGenres(Film film) {
-        if (film.getMpa() != null) {
-            try {
-                MpaRating.fromId(film.getMpa().getId());
-            } catch (IllegalArgumentException e) {
-                throw new NotFoundException("MPA с id=" + film.getMpa().getId() + " не найден");
-            }
-        }
-
+    private void removeDuplicateGenres(Film film) {
         if (film.getGenres() != null) {
-            Map<Integer, Genre> unique = new LinkedHashMap<>();
+            Set<Integer> uniqueIds = new HashSet<>();
+            Set<Genre> uniqueGenres = new LinkedHashSet<>();
             for (Genre genre : film.getGenres()) {
-                if (!unique.containsKey(genre.getId())) {
-                    try {
-                        unique.put(genre.getId(), Genre.fromId(genre.getId()));
-                    } catch (IllegalArgumentException e) {
-                        throw new NotFoundException("Жанр с id=" + genre.getId() + " не найден");
-                    }
+                if (uniqueIds.add(genre.getId())) {
+                    uniqueGenres.add(genre);
                 }
             }
-            film.setGenres(new ArrayList<>(unique.values()));
+            film.setGenres(uniqueGenres);
         }
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.GenreDbStorage;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 
 import java.util.List;
 
@@ -25,23 +26,19 @@ class GenreDbStorageTest {
 
         assertEquals(6, genres.size());
 
-        Genre comedy = null;
-        for (Genre genre : genres) {
-            if (genre.getId() == 1) {
-                comedy = genre;
-                break;
-            }
-        }
+        Genre comedy = genres.stream()
+                .filter(g -> g.getId() == 1)
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Жанр Комедия не найден"));
 
-        assertNotNull(comedy);
         assertEquals("Комедия", comedy.getName());
     }
 
     @Test
     void shouldGetGenreById() {
-        Genre genre = genreDbStorage.getById(1);
+        Genre genre = genreDbStorage.getById(1)
+                .orElseThrow(() -> new NotFoundException("Жанр с id=1 не найден"));
 
-        assertNotNull(genre);
         assertEquals(1, genre.getId());
         assertEquals("Комедия", genre.getName());
     }
