@@ -6,25 +6,34 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.MpaStorage;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class FilmService {
 
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
+
     private final FilmStorage filmStorage;
+    private final MpaStorage mpaStorage;
+    private final GenreStorage genreStorage;
 
     public Film create(Film film) {
         validateFilm(film);
+        enrichFilm(film);
         return filmStorage.add(film);
     }
 
     public Film update(Film film) {
         filmStorage.getById(film.getId());
+
         validateFilm(film);
+        enrichFilm(film);
         return filmStorage.update(film);
     }
 
@@ -49,21 +58,41 @@ public class FilmService {
     }
 
     private void validateFilm(Film film) {
-        if (film.getName() == null || film.getName().isBlank())
+        if (film.getName() == null || film.getName().isBlank()) {
             throw new IllegalArgumentException("Название фильма не может быть пустым");
-        if (film.getDescription() != null && film.getDescription().length() > 200)
-            throw new IllegalArgumentException("Описание фильма не может быть длиннее 200 символов");
-        if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(CINEMA_BIRTHDAY))
-            throw new IllegalArgumentException("Дата релиза фильма не может быть раньше " + CINEMA_BIRTHDAY);
-        if (film.getDuration() == null || film.getDuration() <= 0)
-            throw new IllegalArgumentException("Продолжительность фильма должна быть положительной");
-        if (film.getMpa() == null)
-            throw new IllegalArgumentException("MPA рейтинг фильма должен быть указан");
+        }
 
-        try {
-            MpaRating.fromId(film.getMpa().getId());
-        } catch (IllegalArgumentException e) {
-            throw new NotFoundException("MPA с id=" + film.getMpa().getId() + " не найден");
+        if (film.getDescription() != null && film.getDescription().length() > 200) {
+            throw new IllegalArgumentException("Описание фильма не может быть длиннее 200 символов");
+        }
+
+        if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(CINEMA_BIRTHDAY)) {
+            throw new IllegalArgumentException("Дата релиза фильма не может быть раньше " + CINEMA_BIRTHDAY);
+        }
+
+        if (film.getDuration() == null || film.getDuration() <= 0) {
+            throw new IllegalArgumentException("Продолжительность фильма должна быть положительной");
+        }
+
+        if (film.getMpa() == null) {
+            throw new IllegalArgumentException("MPA рейтинг фильма должен быть указан");
+        }
+    }
+
+    private void enrichFilm(Film film) {
+        MpaRating mpa = mpaStorage.getById(film.getMpa().getId())
+                .orElseThrow(() ->
+                        new NotFoundException("MPA с id=" + film.getMpa().getId() + " не найден"));
+        film.setMpa(mpa);
+
+        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+            film.setGenres(
+                    film.getGenres().stream()
+                            .map(genre -> genreStorage.getById(genre.getId())
+                                    .orElseThrow(() ->
+                                            new NotFoundException("Genre с id=" + genre.getId() + " не найден")))
+                            .collect(Collectors.toSet())
+            );
         }
     }
 }

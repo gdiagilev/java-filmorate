@@ -14,7 +14,7 @@ import ru.yandex.practicum.filmorate.storage.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,8 +34,16 @@ class FilmDbStorageTest {
         film.setDescription("Neo discovers reality");
         film.setReleaseDate(LocalDate.of(1999, 3, 31));
         film.setDuration(136);
-        film.setMpa(new MpaRating(1, "G"));
-        film.setGenres(List.of(new Genre(1, "Комедия")));
+
+        MpaRating mpa = new MpaRating();
+        mpa.setId(1);
+        mpa.setName("G");
+        film.setMpa(mpa);
+
+        Genre genre = new Genre();
+        genre.setId(1);
+        genre.setName("Комедия");
+        film.setGenres(Set.of(genre));
 
         Film saved = filmDbStorage.add(film);
 
@@ -51,7 +59,12 @@ class FilmDbStorageTest {
         film.setDescription("Neo discovers reality");
         film.setReleaseDate(LocalDate.of(1999, 3, 31));
         film.setDuration(136);
-        film.setMpa(new MpaRating(1, "G"));
+
+        MpaRating mpa = new MpaRating();
+        mpa.setId(1);
+        mpa.setName("G");
+        film.setMpa(mpa);
+
         Film saved = filmDbStorage.add(film);
 
         saved.setName("Matrix Reloaded");
@@ -70,7 +83,12 @@ class FilmDbStorageTest {
         film.setDescription("Dream within a dream");
         film.setReleaseDate(LocalDate.of(2010, 7, 16));
         film.setDuration(148);
-        film.setMpa(new MpaRating(2, "PG"));
+
+        MpaRating mpa = new MpaRating();
+        mpa.setId(2);
+        mpa.setName("PG");
+        film.setMpa(mpa);
+
         Film saved = filmDbStorage.add(film);
 
         Film found = filmDbStorage.getById(saved.getId());
@@ -85,7 +103,12 @@ class FilmDbStorageTest {
         film.setDescription("Neo discovers reality");
         film.setReleaseDate(LocalDate.of(1999, 3, 31));
         film.setDuration(136);
-        film.setMpa(new MpaRating(1, "G"));
+
+        MpaRating mpa = new MpaRating();
+        mpa.setId(1);
+        mpa.setName("G");
+        film.setMpa(mpa);
+
         Film savedFilm = filmDbStorage.add(film);
 
         User user = new User();
