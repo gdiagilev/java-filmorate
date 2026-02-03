@@ -4,12 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.MpaStorage;
 
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -91,8 +94,10 @@ public class FilmService {
                             .map(genre -> genreStorage.getById(genre.getId())
                                     .orElseThrow(() ->
                                             new NotFoundException("Genre с id=" + genre.getId() + " не найден")))
-                            .collect(Collectors.toSet())
+                            .sorted(Comparator.comparingInt(Genre::getId))
+                            .collect(Collectors.toCollection(LinkedHashSet::new))
             );
         }
     }
+
 }
