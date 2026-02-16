@@ -1,9 +1,7 @@
 package ru.yandex.practicum.filmorate.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -25,12 +23,14 @@ public class Film {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate releaseDate;
 
+    @NotNull
+    @Positive
     private Integer duration;
-
-    private Set<Integer> likes = new HashSet<>();
 
     @NotNull
     private MpaRating mpa;
 
     private Set<Genre> genres = new HashSet<>();
+    private Set<Integer> likes = new HashSet<>();
+
 }
