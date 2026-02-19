@@ -3,7 +3,9 @@ package ru.yandex.practicum.filmorate.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.EventService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
+    private final EventService eventService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -58,4 +61,13 @@ public class UserController {
         return userService.getCommonFriends(id, otherId);
     }
 
+    @GetMapping("/users/{id}/feed")
+    public List<Event> getFeed(@PathVariable long id) {
+        return eventService.getFeed(id);
+    }
+
+    @DeleteMapping("/{userId}")
+    public void deleteUser(@PathVariable int userId) {
+        userService.deleteUser(userId);
+    }
 }

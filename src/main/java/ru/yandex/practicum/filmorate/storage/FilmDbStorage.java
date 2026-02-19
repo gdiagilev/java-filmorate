@@ -10,9 +10,8 @@ import ru.yandex.practicum.filmorate.model.MpaRating;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
+import java.sql.*;
 import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
 import java.util.*;
 
 @Component
@@ -207,5 +206,76 @@ public class FilmDbStorage implements FilmStorage {
             }
             film.setGenres(uniqueGenres);
         }
+    }
+
+    private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
+        Film film = new Film();
+        film.setId(rs.getInt("id"));
+        film.setName(rs.getString("name"));
+        film.setDescription(rs.getString("description"));
+        film.setReleaseDate(rs.getDate("release_date").toLocalDate());
+        film.setDuration(rs.getInt("duration"));
+        return film;
+    }
+
+    public List<Film> getCommonFilms(int userId, int friendId) {
+        String sql = """
+                SELECT f.*
+                FROM films f
+                JOIN film_likes l1 ON f.id = l1.film_id
+                JOIN film_likes l2 ON f.id = l2.film_id
+                WHERE l1.user_id = ?
+                  AND l2.user_id = ?
+                ORDER BY (
+                    SELECT COUNT(*)
+                    FROM film_likes fl
+                    WHERE fl.film_id = f.id
+                ) DESC
+                """;
+
+        List<Film> films = jdbcTemplate.query(sql, this::mapRowToFilm, userId, friendId);
+        films.forEach(film -> film.setGenres(getGenresByFilmId(film.getId())));
+        return films;
+    }
+
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
+
+        StringBuilder sql = new StringBuilder("""
+                SELECT f.*, COUNT(fl.user_id) AS likes
+                FROM films f
+                LEFT JOIN film_likes fl ON f.id = fl.film_id
+                """);
+
+        if (genreId != null) {
+            sql.append(" JOIN film_genres fg ON f.id = fg.film_id ");
+        }
+
+        sql.append(" WHERE 1=1 ");
+
+        if (genreId != null) {
+            sql.append(" AND fg.genre_id = ").append(genreId);
+        }
+
+        if (year != null) {
+            sql.append(" AND EXTRACT(YEAR FROM f.release_date) = ").append(year);
+        }
+
+        sql.append("""
+                GROUP BY f.id
+                ORDER BY likes DESC
+                LIMIT ?
+                """);
+
+        List<Film> films = jdbcTemplate.query(sql.toString(), this::mapRowToFilm, count);
+
+        films.forEach(film -> film.setGenres(getGenresByFilmId(film.getId())));
+
+        return films;
+    }
+
+    @Override
+    public void delete(int filmId) {
+        String sql = "DELETE FROM films WHERE id = ?";
+        jdbcTemplate.update(sql, filmId);
     }
 }

@@ -14,6 +14,7 @@ import java.util.List;
 public class UserService {
 
     private final UserDbStorage userStorage;
+    private final EventService eventService;
 
     public User create(User user) {
         validateUser(user);
@@ -44,12 +45,14 @@ public class UserService {
         } catch (RuntimeException e) {
             throw new NotFoundException("Не удалось добавить друга");
         }
+        eventService.addEvent(userId, "FRIEND", "ADD", friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
         userStorage.removeFriend(userId, friendId);
+        eventService.addEvent(userId, "FRIEND", "REMOVE", friendId);
     }
 
     public List<User> getFriends(int userId) {
@@ -84,4 +87,10 @@ public class UserService {
             throw new IllegalArgumentException("Дата рождения не может быть в будущем");
         }
     }
+
+    public void deleteUser(int userId) {
+        getById(userId); // проверяем, что пользователь существует
+        userStorage.delete(userId);
+    }
+
 }

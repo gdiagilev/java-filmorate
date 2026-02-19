@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS films;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS genres;
 DROP TABLE IF EXISTS mpa;
+DROP TABLE IF EXISTS events;
 
 CREATE TABLE mpa (
     id INT PRIMARY KEY,
@@ -54,6 +55,16 @@ CREATE TABLE friendships (
     user_id INT NOT NULL,
     friend_id INT NOT NULL,
     PRIMARY KEY (user_id, friend_id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (friend_id) REFERENCES users(id)
+    CONSTRAINT fk_friendships_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_friendships_friend FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE events (
+    event_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    event_type VARCHAR(10) NOT NULL,
+    operation VARCHAR(10) NOT NULL,
+    entity_id BIGINT NOT NULL,
+    timestamp BIGINT NOT NULL
 );

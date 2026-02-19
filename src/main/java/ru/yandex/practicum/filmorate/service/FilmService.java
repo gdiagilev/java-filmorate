@@ -25,6 +25,7 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
+    private final EventService eventService;
 
     public Film create(Film film) {
         validateFilm(film);
@@ -50,10 +51,12 @@ public class FilmService {
 
     public void addLike(int filmId, int userId) {
         filmStorage.addLike(filmId, userId);
+        eventService.addEvent(userId, "LIKE", "ADD", filmId);
     }
 
     public void removeLike(int filmId, int userId) {
         filmStorage.removeLike(filmId, userId);
+        eventService.addEvent(userId, "LIKE", "REMOVE", filmId);
     }
 
     public List<Film> getPopularFilms(int count) {
@@ -98,6 +101,19 @@ public class FilmService {
                             .collect(Collectors.toCollection(LinkedHashSet::new))
             );
         }
+    }
+
+    public List<Film> getCommonFilms(int userId, int friendId) {
+        return filmStorage.getCommonFilms(userId, friendId);
+    }
+
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
+        return filmStorage.getPopularFilms(count, genreId, year);
+    }
+
+    public void deleteFilm(int filmId) {
+        filmStorage.getById(filmId); // проверяем, что фильм существует
+        filmStorage.delete(filmId);
     }
 
 }
