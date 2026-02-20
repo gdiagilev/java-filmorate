@@ -1,10 +1,12 @@
 DROP TABLE IF EXISTS friendships;
+DROP TABLE IF EXISTS film_directors;
 DROP TABLE IF EXISTS film_likes;
 DROP TABLE IF EXISTS film_genres;
 DROP TABLE IF EXISTS films;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS genres;
 DROP TABLE IF EXISTS mpa;
+DROP TABLE IF EXISTS directors;
 
 CREATE TABLE mpa (
     id INT PRIMARY KEY,
@@ -14,6 +16,11 @@ CREATE TABLE mpa (
 CREATE TABLE genres (
     id INT PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE directors (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE users (
@@ -56,4 +63,12 @@ CREATE TABLE friendships (
     PRIMARY KEY (user_id, friend_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (friend_id) REFERENCES users(id)
+);
+
+CREATE TABLE film_directors (
+    film_id INT NOT NULL,
+    director_id INT NOT NULL,
+    PRIMARY KEY (film_id, director_id),
+    FOREIGN KEY (film_id) REFERENCES films (id) ON DELETE CASCADE,
+    FOREIGN KEY (director_id) REFERENCES directors (id)
 );
