@@ -9,7 +9,6 @@ import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Operation;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,7 +39,6 @@ public class EventDbStorage implements EventStorage {
             return ps;
         }, keyHolder);
 
-        // сохраняем сгенерированный eventId
         event.setEventId(keyHolder.getKey().longValue());
         return event;
     }
@@ -48,12 +46,12 @@ public class EventDbStorage implements EventStorage {
     @Override
     public List<Event> getUserFeed(long userId) {
         String sql = """
-            SELECT e.*
-            FROM events e
-            JOIN friendships f ON e.user_id = f.friend_id
-            WHERE f.user_id = ?
-            ORDER BY e.timestamp DESC
-            """;
+                SELECT e.*
+                FROM events e
+                JOIN friendships f ON e.user_id = f.friend_id
+                WHERE f.user_id = ?
+                ORDER BY e.timestamp DESC
+                """;
 
         return jdbcTemplate.query(sql, this::mapRow, userId);
     }
@@ -63,7 +61,6 @@ public class EventDbStorage implements EventStorage {
         event.setEventId(rs.getLong("event_id"));
         event.setTimestamp(rs.getLong("timestamp"));
         event.setUserId(rs.getLong("user_id"));
-        // Строки обратно в enum
         event.setEventType(EventType.valueOf(rs.getString("event_type")));
         event.setOperation(Operation.valueOf(rs.getString("operation")));
         event.setEntityId(rs.getLong("entity_id"));

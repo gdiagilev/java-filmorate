@@ -29,8 +29,6 @@ public class FilmService {
     private final GenreStorage genreStorage;
     private final EventService eventService;
 
-    // ================= ФИЛЬМЫ =================
-
     public Film create(Film film) {
         validateFilm(film);
         enrichFilm(film);
@@ -38,7 +36,7 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        filmStorage.getById(film.getId()); // проверяем существование
+        filmStorage.getById(film.getId());
         validateFilm(film);
         enrichFilm(film);
         return filmStorage.update(film);
@@ -53,11 +51,10 @@ public class FilmService {
     }
 
     public void deleteFilm(int filmId) {
-        filmStorage.getById(filmId); // проверяем существование
+        filmStorage.getById(filmId);
         filmStorage.delete(filmId);
     }
 
-    // ================= ЛАЙКИ =================
 
     public void addLike(int filmId, int userId) {
         filmStorage.addLike(filmId, userId);
@@ -69,8 +66,6 @@ public class FilmService {
         eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
     }
 
-    // ================= ПОПУЛЯРНЫЕ / ОБЩИЕ ФИЛЬМЫ =================
-
     public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
         return filmStorage.getPopularFilms(count, genreId, year);
     }
@@ -79,7 +74,6 @@ public class FilmService {
         return filmStorage.getCommonFilms(userId, friendId);
     }
 
-    // ================= ВАЛИДАЦИЯ / ОБОГАЩЕНИЕ =================
 
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
@@ -104,12 +98,10 @@ public class FilmService {
     }
 
     private void enrichFilm(Film film) {
-        // MPA
         MpaRating mpa = mpaStorage.getById(film.getMpa().getId())
                 .orElseThrow(() -> new NotFoundException("MPA с id=" + film.getMpa().getId() + " не найден"));
         film.setMpa(mpa);
 
-        // Жанры
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
             film.setGenres(film.getGenres().stream()
                     .map(genre -> genreStorage.getById(genre.getId())
