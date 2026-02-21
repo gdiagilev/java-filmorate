@@ -6,14 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.MpaRating;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.storage.DirectorDbStorage;
 import ru.yandex.practicum.filmorate.storage.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,6 +25,7 @@ class FilmDbStorageTest {
     private final FilmDbStorage filmDbStorage;
     private final UserDbStorage userDbStorage;
     private final JdbcTemplate jdbcTemplate;
+    private final DirectorDbStorage directorDbStorage;
 
     @Test
     void shouldAddFilm() {
@@ -120,22 +120,167 @@ class FilmDbStorageTest {
 
         filmDbStorage.addLike(savedFilm.getId(), savedUser.getId());
 
-        Integer likeCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?",
-                Integer.class,
-                savedFilm.getId(),
-                savedUser.getId()
-        );
+        Integer likeCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?", Integer.class, savedFilm.getId(), savedUser.getId());
         assertEquals(1, likeCount);
 
         filmDbStorage.removeLike(savedFilm.getId(), savedUser.getId());
 
-        likeCount = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?",
-                Integer.class,
-                savedFilm.getId(),
-                savedUser.getId()
-        );
+        likeCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?", Integer.class, savedFilm.getId(), savedUser.getId());
         assertEquals(0, likeCount);
+    }
+
+    @Test
+    void shouldSearchFilmsByTitle() {
+        Film film1 = createTestFilm("Matrix", "Sci-Fi");
+        Film film2 = createTestFilm("Matrix Reloaded", "Sequel");
+        filmDbStorage.add(film1);
+        filmDbStorage.add(film2);
+
+        List<Film> found = filmDbStorage.search("Matrix", List.of("title"));
+        assertEquals(2, found.size());
+    }
+
+    @Test
+    void shouldSearchFilmsByDirector() {
+        // Создаём режиссёра
+        Director director = new Director();
+        director.setName("Christopher Nolan");
+        directorDbStorage.add(director); // предположим, что поле directorDbStorage добавлено в тестовый класс
+
+        Film film = createTestFilm("Inception", "Dream within a dream");
+        film = filmDbStorage.add(film);
+        // Связываем фильм с режиссёром
+        linkFilmWithDirector(film.getId(), director.getId());
+
+        List<Film> found = filmDbStorage.search("nolan", List.of("director"));
+        assertEquals(1, found.size());
+        assertEquals("Inception", found.get(0).getName());
+    }
+
+    @Test
+    void shouldSearchFilmsByTitleAndDirector() {
+        // Фильм с режиссёром
+        Director director = new Director();
+        director.setName("Quentin Tarantino");
+        directorDbStorage.add(director);
+        Film film1 = createTestFilm("Pulp Fiction", "Crime");
+        film1 = filmDbStorage.add(film1);
+        linkFilmWithDirector(film1.getId(), director.getId());
+
+        // Фильм по названию
+        Film film2 = createTestFilm("Fiction Story", "Drama");
+        filmDbStorage.add(film2);
+
+        List<Film> found = filmDbStorage.search("fiction", List.of("title", "director"));
+        assertEquals(2, found.size());
+    }
+
+    @Test
+    void shouldReturnEmptyListWhenNothingFound() {
+        List<Film> found = filmDbStorage.search("nonexistent", List.of("title"));
+        assertTrue(found.isEmpty());
+    }
+
+    @Test
+    void shouldSortSearchResultsByLikes() {
+        // Создаём два фильма
+        Film popular = createTestFilm("Popular Film", "Description");
+        Film lessPopular = createTestFilm("Less Popular", "Description");
+        filmDbStorage.add(popular);
+        filmDbStorage.add(lessPopular);
+
+        // Создаём пользователей
+        User user1 = createTestUser("user1@mail.ru", "user1");
+        User user2 = createTestUser("user2@mail.ru", "user2");
+        userDbStorage.add(user1);
+        userDbStorage.add(user2);
+
+        // Лайки: популярный получает 2 лайка, менее популярный — 1
+        filmDbStorage.addLike(popular.getId(), user1.getId());
+        filmDbStorage.addLike(popular.getId(), user2.getId());
+        filmDbStorage.addLike(lessPopular.getId(), user1.getId());
+
+        List<Film> found = filmDbStorage.search("Popular", List.of("title"));
+        assertEquals(2, found.size());
+        assertEquals(popular.getId(), found.get(0).getId()); // самый популярный первым
+        assertEquals(lessPopular.getId(), found.get(1).getId());
+    }
+
+    @Test
+    void shouldGetFilmsByDirectorSortedByYear() {
+        Director director = new Director();
+        director.setName("James Cameron");
+        directorDbStorage.add(director);
+
+        Film film1 = createTestFilm("Avatar", "Sci-Fi");
+        film1.setReleaseDate(LocalDate.of(2009, 12, 18));
+        film1 = filmDbStorage.add(film1);
+        linkFilmWithDirector(film1.getId(), director.getId());
+
+        Film film2 = createTestFilm("Titanic", "Drama");
+        film2.setReleaseDate(LocalDate.of(1997, 12, 19));
+        film2 = filmDbStorage.add(film2);
+        linkFilmWithDirector(film2.getId(), director.getId());
+
+        List<Film> films = filmDbStorage.getFilmsByDirector(director.getId(), "year");
+        assertEquals(2, films.size());
+        // Проверяем сортировку по году (от старых к новым)
+        assertEquals(film2.getId(), films.get(0).getId()); // Titanic (1997)
+        assertEquals(film1.getId(), films.get(1).getId()); // Avatar (2009)
+    }
+
+    @Test
+    void shouldGetFilmsByDirectorSortedByLikes() {
+        Director director = new Director();
+        director.setName("Christopher Nolan");
+        directorDbStorage.add(director);
+
+        Film film1 = createTestFilm("Inception", "Dream");
+        film1 = filmDbStorage.add(film1);
+        linkFilmWithDirector(film1.getId(), director.getId());
+
+        Film film2 = createTestFilm("Interstellar", "Space");
+        film2 = filmDbStorage.add(film2);
+        linkFilmWithDirector(film2.getId(), director.getId());
+
+        // Создаём пользователей и лайки
+        User user1 = createTestUser("user1@mail.ru", "user1");
+        User user2 = createTestUser("user2@mail.ru", "user2");
+        userDbStorage.add(user1);
+        userDbStorage.add(user2);
+
+        filmDbStorage.addLike(film1.getId(), user1.getId());
+        filmDbStorage.addLike(film1.getId(), user2.getId()); // film1 - 2 лайка
+        filmDbStorage.addLike(film2.getId(), user1.getId()); // film2 - 1 лайк
+
+        List<Film> films = filmDbStorage.getFilmsByDirector(director.getId(), "likes");
+        assertEquals(2, films.size());
+        assertEquals(film1.getId(), films.get(0).getId()); // более популярный первым
+        assertEquals(film2.getId(), films.get(1).getId());
+    }
+
+    private Film createTestFilm(String name, String description) {
+        Film film = new Film();
+        film.setName(name);
+        film.setDescription(description);
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        MpaRating mpa = new MpaRating();
+        mpa.setId(1);
+        film.setMpa(mpa);
+        return film;
+    }
+
+    private User createTestUser(String email, String login) {
+        User user = new User();
+        user.setEmail(email);
+        user.setLogin(login);
+        user.setName(login);
+        user.setBirthday(LocalDate.of(1990, 1, 1));
+        return user;
+    }
+
+    private void linkFilmWithDirector(int filmId, int directorId) {
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)", filmId, directorId);
     }
 }
