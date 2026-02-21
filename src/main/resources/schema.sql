@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS review_likes;
+DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS friendships;
 DROP TABLE IF EXISTS film_likes;
 DROP TABLE IF EXISTS film_genres;
@@ -56,4 +58,24 @@ CREATE TABLE friendships (
     PRIMARY KEY (user_id, friend_id),
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (friend_id) REFERENCES users(id)
+);
+
+CREATE TABLE reviews (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    content VARCHAR(255) NOT NULL,
+    is_positive BOOLEAN NOT NULL,
+    user_id INT NOT NULL,
+    film_id INT NOT NULL,
+    useful INT NOT NULL,
+    CONSTRAINT fk_reviews_user FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT fk_reviews_films FOREIGN KEY (film_id) REFERENCES films(id)
+);
+
+CREATE TABLE review_likes (
+    review_id INT NOT NULL,
+    user_id   INT NOT NULL,
+    is_like   BOOLEAN NOT NULL,
+    PRIMARY KEY (review_id, user_id),
+    CONSTRAINT fk_review_likes_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
+    CONSTRAINT fk_review_likes_user   FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE
 );
