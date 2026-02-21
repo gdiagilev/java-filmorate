@@ -3,9 +3,11 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.storage.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.MpaStorage;
@@ -25,6 +27,7 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
+    private final DirectorStorage directorStorage;
 
     public Film create(Film film) {
         validateFilm(film);
@@ -98,6 +101,26 @@ public class FilmService {
                             .collect(Collectors.toCollection(LinkedHashSet::new))
             );
         }
+
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            film.getDirectors().forEach(director -> {
+                Director found = directorStorage.getById(director.getId());
+                director.setName(found.getName());
+            });
+        }
     }
 
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        if (directorId <= 0) {
+            throw new IllegalArgumentException("ID режиссёра должно быть положительным числом");
+        }
+
+        if (sortBy.equals("year")) {
+            return filmStorage.getFilmsByDirectorIdSortedByYear(directorId);
+        } else if (sortBy.equals("likes")) {
+            return filmStorage.getFilmsByDirectorIdSortedByLikes(directorId);
+        } else {
+            throw new IllegalArgumentException("sortBy должен быть 'year' или 'likes'");
+        }
+    }
 }
