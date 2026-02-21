@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.storage.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.MpaStorage;
 
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
+    private final DirectorService directorService;
 
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
 
@@ -100,4 +102,13 @@ public class FilmService {
         }
     }
 
+    public List<Film> getRecommendations(int userId) {
+        return filmStorage.getRecommendations(userId);
+    }
+
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        // Проверяем существование режиссёра (можно через directorService)
+        directorService.getById(directorId); // если есть доступ к DirectorService
+        return filmStorage.getFilmsByDirector(directorId, sortBy);
+    }
 }
