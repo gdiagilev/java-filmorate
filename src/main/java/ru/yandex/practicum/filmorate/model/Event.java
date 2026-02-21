@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 public class Event {
     private long eventId;
     private long userId;
-    private String eventType;
-    private String operation;
+    private EventType eventType;
+    private Operation operation;
     private long entityId;
     private long timestamp;
 }

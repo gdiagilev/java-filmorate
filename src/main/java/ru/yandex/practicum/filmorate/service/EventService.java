@@ -1,9 +1,10 @@
 package ru.yandex.practicum.filmorate.service;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Event;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.storage.EventStorage;
 
 import java.util.List;
@@ -18,7 +19,7 @@ public class EventService {
         return eventStorage.getUserFeed(userId);
     }
 
-    public void addEvent(long userId, String type, String operation, long entityId) {
+    public void addEvent(long userId, EventType type, Operation operation, long entityId) {
         Event event = new Event();
         event.setTimestamp(System.currentTimeMillis());
         event.setUserId(userId);

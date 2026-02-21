@@ -3,6 +3,8 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
@@ -40,19 +42,15 @@ public class UserService {
     public void addFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
-        try {
-            userStorage.addFriend(userId, friendId);
-        } catch (RuntimeException e) {
-            throw new NotFoundException("Не удалось добавить друга");
-        }
-        eventService.addEvent(userId, "FRIEND", "ADD", friendId);
+        userStorage.addFriend(userId, friendId);
+        eventService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
         userStorage.removeFriend(userId, friendId);
-        eventService.addEvent(userId, "FRIEND", "REMOVE", friendId);
+        eventService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
     }
 
     public List<User> getFriends(int userId) {
@@ -89,8 +87,7 @@ public class UserService {
     }
 
     public void deleteUser(int userId) {
-        getById(userId); // проверяем, что пользователь существует
+        getById(userId);
         userStorage.delete(userId);
     }
-
 }

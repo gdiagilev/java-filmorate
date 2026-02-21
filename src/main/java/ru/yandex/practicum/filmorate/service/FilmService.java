@@ -3,6 +3,8 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
@@ -27,6 +29,8 @@ public class FilmService {
     private final GenreStorage genreStorage;
     private final EventService eventService;
 
+    // ================= ФИЛЬМЫ =================
+
     public Film create(Film film) {
         validateFilm(film);
         enrichFilm(film);
@@ -34,8 +38,7 @@ public class FilmService {
     }
 
     public Film update(Film film) {
-        filmStorage.getById(film.getId());
-
+        filmStorage.getById(film.getId()); // проверяем существование
         validateFilm(film);
         enrichFilm(film);
         return filmStorage.update(film);
@@ -49,19 +52,34 @@ public class FilmService {
         return filmStorage.getAll();
     }
 
+    public void deleteFilm(int filmId) {
+        filmStorage.getById(filmId); // проверяем существование
+        filmStorage.delete(filmId);
+    }
+
+    // ================= ЛАЙКИ =================
+
     public void addLike(int filmId, int userId) {
         filmStorage.addLike(filmId, userId);
-        eventService.addEvent(userId, "LIKE", "ADD", filmId);
+        eventService.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
     }
 
     public void removeLike(int filmId, int userId) {
         filmStorage.removeLike(filmId, userId);
-        eventService.addEvent(userId, "LIKE", "REMOVE", filmId);
+        eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
     }
 
-    public List<Film> getPopularFilms(int count) {
-        return filmStorage.getTopLikedFilms(count);
+    // ================= ПОПУЛЯРНЫЕ / ОБЩИЕ ФИЛЬМЫ =================
+
+    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
+        return filmStorage.getPopularFilms(count, genreId, year);
     }
+
+    public List<Film> getCommonFilms(int userId, int friendId) {
+        return filmStorage.getCommonFilms(userId, friendId);
+    }
+
+    // ================= ВАЛИДАЦИЯ / ОБОГАЩЕНИЕ =================
 
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
@@ -86,34 +104,18 @@ public class FilmService {
     }
 
     private void enrichFilm(Film film) {
+        // MPA
         MpaRating mpa = mpaStorage.getById(film.getMpa().getId())
-                .orElseThrow(() ->
-                        new NotFoundException("MPA с id=" + film.getMpa().getId() + " не найден"));
+                .orElseThrow(() -> new NotFoundException("MPA с id=" + film.getMpa().getId() + " не найден"));
         film.setMpa(mpa);
 
+        // Жанры
         if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            film.setGenres(
-                    film.getGenres().stream()
-                            .map(genre -> genreStorage.getById(genre.getId())
-                                    .orElseThrow(() ->
-                                            new NotFoundException("Genre с id=" + genre.getId() + " не найден")))
-                            .sorted(Comparator.comparingInt(Genre::getId))
-                            .collect(Collectors.toCollection(LinkedHashSet::new))
-            );
+            film.setGenres(film.getGenres().stream()
+                    .map(genre -> genreStorage.getById(genre.getId())
+                            .orElseThrow(() -> new NotFoundException("Genre с id=" + genre.getId() + " не найден")))
+                    .sorted(Comparator.comparingInt(Genre::getId))
+                    .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
     }
-
-    public List<Film> getCommonFilms(int userId, int friendId) {
-        return filmStorage.getCommonFilms(userId, friendId);
-    }
-
-    public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {
-        return filmStorage.getPopularFilms(count, genreId, year);
-    }
-
-    public void deleteFilm(int filmId) {
-        filmStorage.getById(filmId); // проверяем, что фильм существует
-        filmStorage.delete(filmId);
-    }
-
 }
