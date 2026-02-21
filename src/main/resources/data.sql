@@ -1,3 +1,5 @@
+DELETE FROM film_directors;
+DELETE FROM directors;
 DELETE FROM film_likes;
 DELETE FROM film_genres;
 DELETE FROM friendships;

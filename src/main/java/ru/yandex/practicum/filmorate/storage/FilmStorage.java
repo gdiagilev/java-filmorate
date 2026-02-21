@@ -19,4 +19,10 @@ public interface FilmStorage {
     void removeLike(int filmId, int userId);
 
     List<Film> getTopLikedFilms(int count);
+
+    List<Film> search(String query, List<String> fields);
+
+    List<Film> getRecommendations(int userId);
+
+    List<Film> getFilmsByDirector(int directorId, String sortBy);
 }
