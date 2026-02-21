@@ -20,6 +20,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ReviewDbStorage implements ReviewStorage {
 
+    private enum ReactionType { LIKE, DISLIKE }
+
     private static final RowMapper<Review> REVIEW_ROW_MAPPER = (rs, rowNum) -> {
         Review review = new Review();
         review.setReviewId(rs.getInt("id"));
@@ -177,6 +179,4 @@ public class ReviewDbStorage implements ReviewStorage {
         if (result.isEmpty()) return null;
         return result.getFirst() ? ReactionType.LIKE : ReactionType.DISLIKE;
     }
-
-    private enum ReactionType {LIKE, DISLIKE}
 }
