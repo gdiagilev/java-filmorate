@@ -73,11 +73,3 @@ CREATE TABLE friendships (
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (friend_id) REFERENCES users(id)
 );
-
-CREATE TABLE film_directors (
-    film_id INT NOT NULL,
-    director_id INT NOT NULL,
-    PRIMARY KEY (film_id, director_id),
-    FOREIGN KEY (film_id) REFERENCES films (id) ON DELETE CASCADE,
-    FOREIGN KEY (director_id) REFERENCES directors (id)
-);
