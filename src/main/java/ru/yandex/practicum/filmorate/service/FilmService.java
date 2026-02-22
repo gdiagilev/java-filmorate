@@ -13,7 +13,6 @@ import ru.yandex.practicum.filmorate.storage.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.MpaStorage;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -22,10 +21,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
-    private final DirectorService directorService;
-
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
-
+    private final DirectorService directorService;
     private final FilmStorage filmStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
@@ -125,6 +122,7 @@ public class FilmService {
             throw new IllegalArgumentException("sortBy должен быть 'year' или 'likes'");
         }
     }
+
     public List<Film> getRecommendations(int userId) {
         return filmStorage.getRecommendations(userId);
     }
