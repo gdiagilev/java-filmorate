@@ -3,9 +3,11 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.MpaRating;
+import ru.yandex.practicum.filmorate.storage.DirectorStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.MpaStorage;
@@ -20,13 +22,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
-    private final DirectorService directorService;
-
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
-
+    private final DirectorService directorService;
     private final FilmStorage filmStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
+    private final DirectorStorage directorStorage;
 
     public Film create(Film film) {
         validateFilm(film);
@@ -100,6 +101,31 @@ public class FilmService {
                             .collect(Collectors.toCollection(LinkedHashSet::new))
             );
         }
+
+        if (film.getDirectors() != null && !film.getDirectors().isEmpty()) {
+            film.getDirectors().forEach(director -> {
+                Director found = directorStorage.getById(director.getId());
+                director.setName(found.getName());
+            });
+        }
+    }
+
+    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
+        if (directorId <= 0) {
+            throw new IllegalArgumentException("ID режиссёра должно быть положительным числом");
+        }
+
+        if (sortBy.equals("year")) {
+            return filmStorage.getFilmsByDirectorIdSortedByYear(directorId);
+        } else if (sortBy.equals("likes")) {
+            return filmStorage.getFilmsByDirectorIdSortedByLikes(directorId);
+        } else {
+            throw new IllegalArgumentException("sortBy должен быть 'year' или 'likes'");
+        }
+    }
+
+    public List<Film> getRecommendations(int userId) {
+        return filmStorage.getRecommendations(userId);
     }
 
     public List<Film> search(String query, String by) {
@@ -115,11 +141,5 @@ public class FilmService {
                 .map(String::trim)
                 .filter(f -> f.equals("title") || f.equals("director"))
                 .collect(Collectors.toList());
-    }
-
-    public List<Film> getFilmsByDirector(int directorId, String sortBy) {
-        // Проверяем существование режиссёра (можно через directorService)
-        directorService.getById(directorId); // если есть доступ к DirectorService
-        return filmStorage.getFilmsByDirector(directorId, sortBy);
     }
 }

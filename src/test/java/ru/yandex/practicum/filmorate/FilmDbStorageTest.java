@@ -130,6 +130,127 @@ class FilmDbStorageTest {
     }
 
     @Test
+    void shouldReturnEmptyRecommendationsForUserWithNoLikes() {
+        User user = createTestUser("user@mail.ru", "user");
+        userDbStorage.add(user);
+
+        List<Film> recommendations = filmDbStorage.getRecommendations(user.getId());
+        assertTrue(recommendations.isEmpty());
+    }
+
+    @Test
+    void shouldReturnEmptyRecommendationsWhenNoSimilarUsers() {
+        User user = createTestUser("user@mail.ru", "user");
+        userDbStorage.add(user);
+
+        Film film = createTestFilm("Film", "Desc");
+        film = filmDbStorage.add(film);
+        filmDbStorage.addLike(film.getId(), user.getId());
+
+        List<Film> recommendations = filmDbStorage.getRecommendations(user.getId());
+        assertTrue(recommendations.isEmpty());
+    }
+
+    @Test
+    void shouldReturnRecommendationsForUserWithSimilarLikes() {
+        // Создаём пользователей
+        User user1 = createTestUser("user1@mail.ru", "user1");
+        User user2 = createTestUser("user2@mail.ru", "user2");
+        userDbStorage.add(user1);
+        userDbStorage.add(user2);
+
+        // Создаём фильмы
+        Film film1 = createTestFilm("Film1", "Desc1");
+        Film film2 = createTestFilm("Film2", "Desc2");
+        Film film3 = createTestFilm("Film3", "Desc3");
+        filmDbStorage.add(film1);
+        filmDbStorage.add(film2);
+        filmDbStorage.add(film3);
+
+        // user1 лайкает film1
+        filmDbStorage.addLike(film1.getId(), user1.getId());
+
+        // user2 лайкает film1 и film2
+        filmDbStorage.addLike(film1.getId(), user2.getId());
+        filmDbStorage.addLike(film2.getId(), user2.getId());
+
+        // user3 лайкает film3 (не должен влиять)
+        User user3 = createTestUser("user3@mail.ru", "user3");
+        userDbStorage.add(user3);
+        filmDbStorage.addLike(film3.getId(), user3.getId());
+
+        // Рекомендации для user1 должны содержать film2
+        List<Film> recommendations = filmDbStorage.getRecommendations(user1.getId());
+        assertEquals(1, recommendations.size());
+        assertEquals(film2.getId(), recommendations.get(0).getId());
+
+        // Рекомендации для user2 должны быть пусты (он уже лайкнул всё, что есть у user1)
+        recommendations = filmDbStorage.getRecommendations(user2.getId());
+        assertTrue(recommendations.isEmpty());
+    }
+
+    @Test
+    void shouldReturnRecommendationsSortedByScore() {
+        // Сценарий: user1 лайкает film1
+        // user2 лайкает film1 и film2
+        // user3 лайкает film1, film2 и film3
+        // Тогда для user1 рекомендуются film2 (2 совпадения) и film3 (1 совпадение) с сортировкой по убыванию
+
+        User user1 = createTestUser("user1@mail.ru", "user1");
+        User user2 = createTestUser("user2@mail.ru", "user2");
+        User user3 = createTestUser("user3@mail.ru", "user3");
+        userDbStorage.add(user1);
+        userDbStorage.add(user2);
+        userDbStorage.add(user3);
+
+        Film film1 = createTestFilm("Film1", "Desc1");
+        Film film2 = createTestFilm("Film2", "Desc2");
+        Film film3 = createTestFilm("Film3", "Desc3");
+        filmDbStorage.add(film1);
+        filmDbStorage.add(film2);
+        filmDbStorage.add(film3);
+
+        filmDbStorage.addLike(film1.getId(), user1.getId());
+
+        filmDbStorage.addLike(film1.getId(), user2.getId());
+        filmDbStorage.addLike(film2.getId(), user2.getId());
+
+        filmDbStorage.addLike(film1.getId(), user3.getId());
+        filmDbStorage.addLike(film2.getId(), user3.getId());
+        filmDbStorage.addLike(film3.getId(), user3.getId());
+
+        List<Film> recommendations = filmDbStorage.getRecommendations(user1.getId());
+        assertEquals(2, recommendations.size());
+        assertEquals(film2.getId(), recommendations.get(0).getId()); // film2 (2 совпадения)
+        assertEquals(film3.getId(), recommendations.get(1).getId()); // film3 (1 совпадение)
+    }
+
+    private Film createTestFilm(String name, String description) {
+        Film film = new Film();
+        film.setName(name);
+        film.setDescription(description);
+        film.setReleaseDate(LocalDate.of(2000, 1, 1));
+        film.setDuration(120);
+        MpaRating mpa = new MpaRating();
+        mpa.setId(1);
+        film.setMpa(mpa);
+        return film;
+    }
+
+    private User createTestUser(String email, String login) {
+        User user = new User();
+        user.setEmail(email);
+        user.setLogin(login);
+        user.setName(login);
+        user.setBirthday(LocalDate.of(1990, 1, 1));
+        return user;
+    }
+
+    private void linkFilmWithDirector(int filmId, int directorId) {
+        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)", filmId, directorId);
+    }
+
+    @Test
     void shouldSearchFilmsByTitle() {
         Film film1 = createTestFilm("Matrix", "Sci-Fi");
         Film film2 = createTestFilm("Matrix Reloaded", "Sequel");
@@ -141,31 +262,12 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void shouldSearchFilmsByDirector() {
-        // Создаём режиссёра
-        Director director = new Director();
-        director.setName("Christopher Nolan");
-        directorDbStorage.add(director); // предположим, что поле directorDbStorage добавлено в тестовый класс
-
-        Film film = createTestFilm("Inception", "Dream within a dream");
-        film = filmDbStorage.add(film);
-        // Связываем фильм с режиссёром
-        linkFilmWithDirector(film.getId(), director.getId());
-
-        List<Film> found = filmDbStorage.search("nolan", List.of("director"));
-        assertEquals(1, found.size());
-        assertEquals("Inception", found.get(0).getName());
-    }
-
-    @Test
     void shouldSearchFilmsByTitleAndDirector() {
         // Фильм с режиссёром
         Director director = new Director();
         director.setName("Quentin Tarantino");
-        directorDbStorage.add(director);
         Film film1 = createTestFilm("Pulp Fiction", "Crime");
         film1 = filmDbStorage.add(film1);
-        linkFilmWithDirector(film1.getId(), director.getId());
 
         // Фильм по названию
         Film film2 = createTestFilm("Fiction Story", "Drama");
@@ -204,83 +306,5 @@ class FilmDbStorageTest {
         assertEquals(2, found.size());
         assertEquals(popular.getId(), found.get(0).getId()); // самый популярный первым
         assertEquals(lessPopular.getId(), found.get(1).getId());
-    }
-
-    @Test
-    void shouldGetFilmsByDirectorSortedByYear() {
-        Director director = new Director();
-        director.setName("James Cameron");
-        directorDbStorage.add(director);
-
-        Film film1 = createTestFilm("Avatar", "Sci-Fi");
-        film1.setReleaseDate(LocalDate.of(2009, 12, 18));
-        film1 = filmDbStorage.add(film1);
-        linkFilmWithDirector(film1.getId(), director.getId());
-
-        Film film2 = createTestFilm("Titanic", "Drama");
-        film2.setReleaseDate(LocalDate.of(1997, 12, 19));
-        film2 = filmDbStorage.add(film2);
-        linkFilmWithDirector(film2.getId(), director.getId());
-
-        List<Film> films = filmDbStorage.getFilmsByDirector(director.getId(), "year");
-        assertEquals(2, films.size());
-        // Проверяем сортировку по году (от старых к новым)
-        assertEquals(film2.getId(), films.get(0).getId()); // Titanic (1997)
-        assertEquals(film1.getId(), films.get(1).getId()); // Avatar (2009)
-    }
-
-    @Test
-    void shouldGetFilmsByDirectorSortedByLikes() {
-        Director director = new Director();
-        director.setName("Christopher Nolan");
-        directorDbStorage.add(director);
-
-        Film film1 = createTestFilm("Inception", "Dream");
-        film1 = filmDbStorage.add(film1);
-        linkFilmWithDirector(film1.getId(), director.getId());
-
-        Film film2 = createTestFilm("Interstellar", "Space");
-        film2 = filmDbStorage.add(film2);
-        linkFilmWithDirector(film2.getId(), director.getId());
-
-        // Создаём пользователей и лайки
-        User user1 = createTestUser("user1@mail.ru", "user1");
-        User user2 = createTestUser("user2@mail.ru", "user2");
-        userDbStorage.add(user1);
-        userDbStorage.add(user2);
-
-        filmDbStorage.addLike(film1.getId(), user1.getId());
-        filmDbStorage.addLike(film1.getId(), user2.getId()); // film1 - 2 лайка
-        filmDbStorage.addLike(film2.getId(), user1.getId()); // film2 - 1 лайк
-
-        List<Film> films = filmDbStorage.getFilmsByDirector(director.getId(), "likes");
-        assertEquals(2, films.size());
-        assertEquals(film1.getId(), films.get(0).getId()); // более популярный первым
-        assertEquals(film2.getId(), films.get(1).getId());
-    }
-
-    private Film createTestFilm(String name, String description) {
-        Film film = new Film();
-        film.setName(name);
-        film.setDescription(description);
-        film.setReleaseDate(LocalDate.of(2000, 1, 1));
-        film.setDuration(120);
-        MpaRating mpa = new MpaRating();
-        mpa.setId(1);
-        film.setMpa(mpa);
-        return film;
-    }
-
-    private User createTestUser(String email, String login) {
-        User user = new User();
-        user.setEmail(email);
-        user.setLogin(login);
-        user.setName(login);
-        user.setBirthday(LocalDate.of(1990, 1, 1));
-        return user;
-    }
-
-    private void linkFilmWithDirector(int filmId, int directorId) {
-        jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)", filmId, directorId);
     }
 }

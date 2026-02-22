@@ -5,18 +5,67 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Director;
 
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
 public class DirectorDbStorage implements DirectorStorage {
 
     private final JdbcTemplate jdbcTemplate;
+
+    @Override
+    public Director create(Director director) {
+        String sql = "INSERT INTO directors (name) VALUES (?)";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, director.getName());
+            return ps;
+        }, keyHolder);
+
+        Number key = keyHolder.getKey();
+        if (key == null) {
+            throw new IllegalStateException("Ошибка при получении сгенерированного ID для фильма");
+        }
+        director.setId(key.intValue());
+        return director;
+    }
+
+    @Override
+    public Director update(Director director) {
+        getById(director.getId());
+
+        String sql = "UPDATE directors SET name = ? WHERE id = ?";
+        jdbcTemplate.update(sql,
+                director.getName(),
+                director.getId());
+
+        return director;
+    }
+
+    @Override
+    public Director getById(int id) {
+        String sql = "SELECT id, name FROM directors WHERE id = ?";
+
+        List<Director> result = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Director director = new Director();
+            director.setId(rs.getInt("id"));
+            director.setName(rs.getString("name"));
+            return director;
+        }, id);
+
+        if (result.isEmpty()) {
+            throw new NotFoundException("Режиссёр с id=" + id + " не найден");
+        }
+
+        return result.get(0);
+    }
 
     @Override
     public List<Director> getAll() {
@@ -30,43 +79,9 @@ public class DirectorDbStorage implements DirectorStorage {
     }
 
     @Override
-    public Optional<Director> getById(int id) {
-        String sql = "SELECT id, name FROM directors WHERE id = ?";
-        List<Director> result = jdbcTemplate.query(sql, (rs, rowNum) -> {
-            Director director = new Director();
-            director.setId(rs.getInt("id"));
-            director.setName(rs.getString("name"));
-            return director;
-        }, id);
-        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
-    }
-
-    @Override
-    public Director add(Director director) {
-        String sql = "INSERT INTO directors (name) VALUES (?)";
-        KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            ps.setString(1, director.getName());
-            return ps;
-        }, keyHolder);
-        director.setId(keyHolder.getKey().intValue());
-        return director;
-    }
-
-    @Override
-    public Director update(Director director) {
-        String sql = "UPDATE directors SET name = ? WHERE id = ?";
-        int updated = jdbcTemplate.update(sql, director.getName(), director.getId());
-        if (updated == 0) {
-            throw new RuntimeException("Director not found with id " + director.getId());
-        }
-        return director;
-    }
-
-    @Override
-    public void delete(int id) {
+    public boolean deleteById(int id) {
         String sql = "DELETE FROM directors WHERE id = ?";
-        jdbcTemplate.update(sql, id);
+        int rowsDeleted = jdbcTemplate.update(sql, id);
+        return rowsDeleted > 0;
     }
 }

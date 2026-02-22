@@ -70,21 +70,18 @@ public class FilmController {
         return result;
     }
 
+    @GetMapping("/director/{directorId}")
+    public List<Film> getFilmsByDirector(
+            @PathVariable int directorId,
+            @RequestParam(name = "sortBy", defaultValue = "") String sortBy) {
+        return filmService.getFilmsByDirector(directorId, sortBy);
+    }
     @GetMapping("/search")
     public List<Film> search(@RequestParam String query,
                              @RequestParam(required = false) String by) {
         log.info("Получен GET /films/search?query={}&by={}", query, by);
         List<Film> result = filmService.search(query, by);
         log.info("Отдан ответ GET /films/search: {} фильмов", result.size());
-        return result;
-    }
-
-    @GetMapping("/director/{directorId}")
-    public List<Film> getFilmsByDirector(@PathVariable int directorId,
-                                         @RequestParam(defaultValue = "year") String sortBy) {
-        log.info("Получен GET /films/director/{}?sortBy={}", directorId, sortBy);
-        List<Film> result = filmService.getFilmsByDirector(directorId, sortBy);
-        log.info("Отдан ответ GET /films/director/{}: {} фильмов", directorId, result.size());
         return result;
     }
 }

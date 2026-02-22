@@ -85,4 +85,9 @@ public class UserService {
             throw new IllegalArgumentException("Дата рождения не может быть в будущем");
         }
     }
+
+    public List<Film> getRecommendations(int userId) {
+        getById(userId); // проверка существования пользователя
+        return filmService.getRecommendations(userId);
+    }
 }
