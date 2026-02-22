@@ -20,7 +20,9 @@ public interface FilmStorage {
 
     List<Film> getTopLikedFilms(int count);
 
-    List<Film> getRecommendations(int userId);
+    List<Film> getFilmsByDirectorIdSortedByYear(int id);
 
-    List<Film> getFilmsByDirector(int directorId, String sortBy);
+    List<Film> getFilmsByDirectorIdSortedByLikes(int id);
+
+    List<Film> getRecommendations(int userId);
 }

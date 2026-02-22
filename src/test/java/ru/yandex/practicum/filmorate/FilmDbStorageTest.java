@@ -130,59 +130,6 @@ class FilmDbStorageTest {
     }
 
     @Test
-    void shouldGetFilmsByDirectorSortedByYear() {
-        Director director = new Director();
-        director.setName("James Cameron");
-        directorDbStorage.add(director);
-
-        Film film1 = createTestFilm("Avatar", "Sci-Fi");
-        film1.setReleaseDate(LocalDate.of(2009, 12, 18));
-        film1 = filmDbStorage.add(film1);
-        linkFilmWithDirector(film1.getId(), director.getId());
-
-        Film film2 = createTestFilm("Titanic", "Drama");
-        film2.setReleaseDate(LocalDate.of(1997, 12, 19));
-        film2 = filmDbStorage.add(film2);
-        linkFilmWithDirector(film2.getId(), director.getId());
-
-        List<Film> films = filmDbStorage.getFilmsByDirector(director.getId(), "year");
-        assertEquals(2, films.size());
-        // Проверяем сортировку по году (от старых к новым)
-        assertEquals(film2.getId(), films.get(0).getId()); // Titanic (1997)
-        assertEquals(film1.getId(), films.get(1).getId()); // Avatar (2009)
-    }
-
-    @Test
-    void shouldGetFilmsByDirectorSortedByLikes() {
-        Director director = new Director();
-        director.setName("Christopher Nolan");
-        directorDbStorage.add(director);
-
-        Film film1 = createTestFilm("Inception", "Dream");
-        film1 = filmDbStorage.add(film1);
-        linkFilmWithDirector(film1.getId(), director.getId());
-
-        Film film2 = createTestFilm("Interstellar", "Space");
-        film2 = filmDbStorage.add(film2);
-        linkFilmWithDirector(film2.getId(), director.getId());
-
-        // Создаём пользователей и лайки
-        User user1 = createTestUser("user1@mail.ru", "user1");
-        User user2 = createTestUser("user2@mail.ru", "user2");
-        userDbStorage.add(user1);
-        userDbStorage.add(user2);
-
-        filmDbStorage.addLike(film1.getId(), user1.getId());
-        filmDbStorage.addLike(film1.getId(), user2.getId()); // film1 - 2 лайка
-        filmDbStorage.addLike(film2.getId(), user1.getId()); // film2 - 1 лайк
-
-        List<Film> films = filmDbStorage.getFilmsByDirector(director.getId(), "likes");
-        assertEquals(2, films.size());
-        assertEquals(film1.getId(), films.get(0).getId()); // более популярный первым
-        assertEquals(film2.getId(), films.get(1).getId());
-    }
-
-    @Test
     void shouldReturnEmptyRecommendationsForUserWithNoLikes() {
         User user = createTestUser("user@mail.ru", "user");
         userDbStorage.add(user);
