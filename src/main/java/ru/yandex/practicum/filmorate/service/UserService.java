@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Operation;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
@@ -14,7 +15,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
-
+    private final FilmService filmService;
     private final UserDbStorage userStorage;
     private final EventService eventService;
 
@@ -84,6 +85,11 @@ public class UserService {
         if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("Дата рождения не может быть в будущем");
         }
+    }
+
+    public List<Film> getRecommendations(int userId) {
+        getById(userId); // проверка существования пользователя
+        return filmService.getRecommendations(userId);
     }
 
     public void deleteUser(int userId) {
