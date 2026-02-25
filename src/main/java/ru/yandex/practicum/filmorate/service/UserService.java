@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
 
+    private final JdbcTemplate jdbcTemplate;
     private final FilmService filmService;
     private final UserDbStorage userStorage;
     private final EventService eventService;
@@ -93,11 +95,9 @@ public class UserService {
     }
 
     public boolean existsById(int id) {
-        try {
-            return userStorage.getById(id) != null;
-        } catch (NotFoundException e) {
-            return false;
-        }
+        String sql = "SELECT COUNT(*) FROM users WHERE id=?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
     }
 
     public boolean userExists(int id) {

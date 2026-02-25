@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.*;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -12,6 +13,8 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class FilmService {
+
+    private final JdbcTemplate jdbcTemplate;
 
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
 
@@ -194,11 +197,9 @@ public class FilmService {
     }
 
     public boolean existsById(int id) {
-        try {
-            return filmStorage.getById(id) != null;
-        } catch (NotFoundException e) {
-            return false;
-        }
+        String sql = "SELECT COUNT(*) FROM films WHERE id=?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
     }
 
     public boolean filmExists(int filmId) {

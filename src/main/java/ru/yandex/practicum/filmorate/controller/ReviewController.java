@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Review;
+import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.service.ReviewService;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.List;
 
@@ -16,10 +18,12 @@ import java.util.List;
 public class ReviewController {
 
     private final ReviewService reviewService;
+    private final UserService userService;
+    private final FilmService filmService;
 
     @PostMapping
-    public Review createReview(@Valid @RequestBody Review review) {
-        return reviewService.add(review);
+    public Review createReview(@RequestBody Review review) {
+        return reviewService.add(review, userService, filmService);
     }
 
     @PutMapping
@@ -37,7 +41,7 @@ public class ReviewController {
         return reviewService.getById(id);
     }
 
-    @GetMapping()
+    @GetMapping
     public List<Review> getReviews(@RequestParam(required = false) Integer filmId,
                                    @RequestParam(defaultValue = "10") int count) {
         return reviewService.getReviews(filmId, count);
@@ -47,14 +51,12 @@ public class ReviewController {
     public void addLike(@PathVariable int id,
                         @PathVariable int userId) {
         reviewService.addLike(id, userId);
-
     }
 
     @PutMapping("/{id}/dislike/{userId}")
     public void addDislike(@PathVariable int id,
                            @PathVariable int userId) {
         reviewService.addDislike(id, userId);
-
     }
 
     @DeleteMapping("/{id}/like/{userId}")
