@@ -21,7 +21,7 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public Review add(Review review) {
         String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id, useful) VALUES (?, ?, ?, ?, 0)";
-        KeyHolder keyHolder = new GeneratedKeyHolder(); // Spring KeyHolder
+        KeyHolder keyHolder = new GeneratedKeyHolder();
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -41,8 +41,9 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public Review update(Review review) {
-        String sql = "UPDATE reviews SET content=?, is_positive=? WHERE id=?";
-        int updated = jdbcTemplate.update(sql, review.getContent(), review.getIsPositive(), review.getReviewId());
+        int updated = jdbcTemplate.update(
+                "UPDATE reviews SET content=?, is_positive=? WHERE id=?",
+                review.getContent(), review.getIsPositive(), review.getReviewId());
         if (updated == 0) throw new NotFoundException("Отзыв с id=" + review.getReviewId() + " не найден");
         return getReview(review.getReviewId());
     }
@@ -100,8 +101,8 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public void addLike(int reviewId, int userId) {
-        String checkSql = "SELECT COUNT(*) FROM review_likes WHERE review_id=? AND user_id=?";
-        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, reviewId, userId);
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM review_likes WHERE review_id=? AND user_id=?", Integer.class, reviewId, userId);
         if (count == null || count == 0) {
             jdbcTemplate.update("INSERT INTO review_likes (review_id, user_id, is_like) VALUES (?, ?, TRUE)", reviewId, userId);
             jdbcTemplate.update("UPDATE reviews SET useful = useful + 1 WHERE id=?", reviewId);
@@ -121,8 +122,16 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public void addDislike(int reviewId, int userId) {
-        String checkSql = "SELECT COUNT(*) FROM review_likes WHERE review_id=? AND user_id=?";
-        Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, reviewId, userId);
+        Integer likeCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM review_likes WHERE review_id=? AND user_id=? AND is_like=TRUE",
+                Integer.class, reviewId, userId);
+        if (likeCount != null && likeCount > 0) {
+            jdbcTemplate.update("DELETE FROM review_likes WHERE review_id=? AND user_id=? AND is_like=TRUE", reviewId, userId);
+            jdbcTemplate.update("UPDATE reviews SET useful = useful - 1 WHERE id=?", reviewId);
+        }
+
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM review_likes WHERE review_id=? AND user_id=?", Integer.class, reviewId, userId);
         if (count == null || count == 0) {
             jdbcTemplate.update("INSERT INTO review_likes (review_id, user_id, is_like) VALUES (?, ?, FALSE)", reviewId, userId);
             jdbcTemplate.update("UPDATE reviews SET useful = useful - 1 WHERE id=?", reviewId);

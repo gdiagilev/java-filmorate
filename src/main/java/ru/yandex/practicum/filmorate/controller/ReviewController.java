@@ -24,11 +24,11 @@ public class ReviewController {
 
     @PostMapping
     public Review createReview(@Valid @RequestBody Review review) {
-        // Проверка существования пользователя/фильма через NotFoundException
-        if (!userService.existsById(review.getUserId())) {
+        // Проверка существования пользователя и фильма
+        if (review.getUserId() == null || review.getUserId() <= 0 || !userService.existsById(review.getUserId())) {
             throw new NotFoundException("Пользователь с id=" + review.getUserId() + " не найден");
         }
-        if (!filmService.existsById(review.getFilmId())) {
+        if (review.getFilmId() == null || review.getFilmId() <= 0 || !filmService.existsById(review.getFilmId())) {
             throw new NotFoundException("Фильм с id=" + review.getFilmId() + " не найден");
         }
         return reviewService.add(review);
@@ -57,25 +57,25 @@ public class ReviewController {
 
     @PutMapping("/{id}/like/{userId}")
     public void addLike(@PathVariable int id,
-                        @PathVariable int userId) {
+                        @PathVariable Integer userId) {
         reviewService.addLike(id, userId);
     }
 
     @PutMapping("/{id}/dislike/{userId}")
     public void addDislike(@PathVariable int id,
-                           @PathVariable int userId) {
+                           @PathVariable Integer userId) {
         reviewService.addDislike(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
     public void deleteLike(@PathVariable int id,
-                           @PathVariable int userId) {
+                           @PathVariable Integer userId) {
         reviewService.removeLike(id, userId);
     }
 
     @DeleteMapping("/{id}/dislike/{userId}")
     public void deleteDislike(@PathVariable int id,
-                              @PathVariable int userId) {
+                              @PathVariable Integer userId) {
         reviewService.removeDislike(id, userId);
     }
 }

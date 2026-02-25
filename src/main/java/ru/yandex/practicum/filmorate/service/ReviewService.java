@@ -27,7 +27,6 @@ public class ReviewService {
         if (!userStorage.existsById(review.getUserId())) {
             throw new NotFoundException("Пользователь с id=" + review.getUserId() + " не найден");
         }
-
         if (!filmStorage.existsById(review.getFilmId())) {
             throw new NotFoundException("Фильм с id=" + review.getFilmId() + " не найден");
         }
@@ -66,34 +65,32 @@ public class ReviewService {
         return reviewStorage.getReviews(filmId != null ? filmId : 0, count);
     }
 
-    // --- Likes / Dislikes ---
-    public void addLike(int reviewId, int userId) {
+    public void addLike(int reviewId, Integer userId) {
         validateUser(userId);
         reviewStorage.addLike(reviewId, userId);
         eventService.addEvent(userId, EventType.REVIEW, Operation.ADD, reviewId);
     }
 
-    public void removeLike(int reviewId, int userId) {
+    public void removeLike(int reviewId, Integer userId) {
         validateUser(userId);
         reviewStorage.removeLike(reviewId, userId);
         eventService.addEvent(userId, EventType.REVIEW, Operation.REMOVE, reviewId);
     }
 
-    public void addDislike(int reviewId, int userId) {
+    public void addDislike(int reviewId, Integer userId) {
         validateUser(userId);
         reviewStorage.addDislike(reviewId, userId);
         eventService.addEvent(userId, EventType.REVIEW, Operation.REMOVE, reviewId);
     }
 
-    public void removeDislike(int reviewId, int userId) {
+    public void removeDislike(int reviewId, Integer userId) {
         validateUser(userId);
         reviewStorage.removeDislike(reviewId, userId);
         eventService.addEvent(userId, EventType.REVIEW, Operation.ADD, reviewId);
     }
 
-    // --- Helpers ---
-    private void validateUser(int userId) {
-        if (userId <= 0 || !userStorage.existsById(userId)) {
+    private void validateUser(Integer userId) {
+        if (userId == null || userId <= 0 || !userStorage.existsById(userId)) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
     }
