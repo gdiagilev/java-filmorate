@@ -3,9 +3,9 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,8 +13,11 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
+    private final JdbcTemplate jdbcTemplate;
     private final FilmService filmService;
     private final UserDbStorage userStorage;
+    private final EventService eventService;
 
     public User create(User user) {
         validateUser(user);
@@ -29,8 +32,7 @@ public class UserService {
 
     public User getById(int id) {
         return userStorage.getById(id)
-                .orElseThrow(() ->
-                        new NotFoundException("Пользователь с id=" + id + " не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
     }
 
     public List<User> getAll() {
@@ -40,17 +42,19 @@ public class UserService {
     public void addFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
-        try {
-            userStorage.addFriend(userId, friendId);
-        } catch (RuntimeException e) {
-            throw new NotFoundException("Не удалось добавить друга");
-        }
+
+        userStorage.addFriend(userId, friendId);
+
+        eventService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
+
         userStorage.removeFriend(userId, friendId);
+
+        eventService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
     }
 
     public List<User> getFriends(int userId) {
@@ -59,35 +63,48 @@ public class UserService {
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        getById(userId);
-        getById(otherId);
         List<User> friends1 = getFriends(userId);
         List<User> friends2 = getFriends(otherId);
-
         friends1.retainAll(friends2);
         return friends1;
+    }
+
+    public void deleteUser(int userId) {
+        getById(userId);
+        userStorage.delete(userId);
+    }
+
+    public List<Film> getRecommendations(int userId) {
+        getById(userId);
+        return filmService.getRecommendations(userId);
     }
 
     private void validateUser(User user) {
         if (user.getLogin() == null || user.getLogin().isBlank()) {
             throw new IllegalArgumentException("Логин не может быть пустым");
         }
-
         if (user.getLogin().contains(" ")) {
             throw new IllegalArgumentException("Логин не должен содержать пробелы");
         }
-
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
-
         if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("Дата рождения не может быть в будущем");
         }
     }
 
-    public List<Film> getRecommendations(int userId) {
-        getById(userId); // проверка существования пользователя
-        return filmService.getRecommendations(userId);
+    public boolean existsById(int id) {
+        String sql = "SELECT COUNT(*) FROM users WHERE id=?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
+    }
+
+    public boolean userExists(int id) {
+        try {
+            return getById(id) != null;
+        } catch (NotFoundException e) {
+            return false;
+        }
     }
 }
