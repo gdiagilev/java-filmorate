@@ -21,7 +21,7 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public Review add(Review review) {
         String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id, useful) VALUES (?, ?, ?, ?, 0)";
-        KeyHolder keyHolder = new GeneratedKeyHolder();
+        KeyHolder keyHolder = new GeneratedKeyHolder(); // Spring KeyHolder
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -49,25 +49,26 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public void delete(int reviewId) {
-        String sql = "DELETE FROM reviews WHERE id=?";
-        int deleted = jdbcTemplate.update(sql, reviewId);
+        int deleted = jdbcTemplate.update("DELETE FROM reviews WHERE id=?", reviewId);
         if (deleted == 0) throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
     }
 
     @Override
     public Review getReview(int reviewId) {
-        String sql = "SELECT id, content, is_positive, user_id, film_id, useful FROM reviews WHERE id=?";
-        List<Review> reviews = jdbcTemplate.query(sql, (rs, rowNum) -> {
-            Review r = new Review();
-            r.setReviewId(rs.getInt("id"));
-            r.setContent(rs.getString("content"));
-            r.setIsPositive(rs.getBoolean("is_positive"));
-            r.setUserId(rs.getInt("user_id"));
-            r.setFilmId(rs.getInt("film_id"));
-            r.setUseful(rs.getInt("useful"));
-            return r;
-        }, reviewId);
-
+        List<Review> reviews = jdbcTemplate.query(
+                "SELECT id, content, is_positive, user_id, film_id, useful FROM reviews WHERE id=?",
+                (rs, rowNum) -> {
+                    Review r = new Review();
+                    r.setReviewId(rs.getInt("id"));
+                    r.setContent(rs.getString("content"));
+                    r.setIsPositive(rs.getBoolean("is_positive"));
+                    r.setUserId(rs.getInt("user_id"));
+                    r.setFilmId(rs.getInt("film_id"));
+                    r.setUseful(rs.getInt("useful"));
+                    return r;
+                },
+                reviewId
+        );
         if (reviews.isEmpty()) throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
         return reviews.get(0);
     }
@@ -76,17 +77,15 @@ public class ReviewDbStorage implements ReviewStorage {
     public List<Review> getReviews(int filmId, int count) {
         String sql;
         Object[] params;
-
         if (filmId > 0) {
-            sql = "SELECT id, content, is_positive, user_id, film_id, useful " +
-                    "FROM reviews WHERE film_id=? ORDER BY useful DESC LIMIT ?";
+            sql = "SELECT id, content, is_positive, user_id, film_id, useful FROM reviews " +
+                    "WHERE film_id=? ORDER BY useful DESC LIMIT ?";
             params = new Object[]{filmId, count};
         } else {
-            sql = "SELECT id, content, is_positive, user_id, film_id, useful " +
-                    "FROM reviews ORDER BY useful DESC LIMIT ?";
+            sql = "SELECT id, content, is_positive, user_id, film_id, useful FROM reviews " +
+                    "ORDER BY useful DESC LIMIT ?";
             params = new Object[]{count};
         }
-
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             Review r = new Review();
             r.setReviewId(rs.getInt("id"));
