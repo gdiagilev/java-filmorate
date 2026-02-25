@@ -77,6 +77,15 @@ public class FilmDbStorage implements FilmStorage {
         return films.get(0);
     }
 
+    public Optional<Film> getByIdOptional(int id) {
+        String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
+                "FROM films f JOIN mpa m ON f.mpa_id = m.id WHERE f.id=?";
+
+        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapFilmWithRelations(rs), id);
+
+        return films.isEmpty() ? Optional.empty() : Optional.of(films.get(0));
+    }
+
     @Override
     public List<Film> getAll() {
         String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
@@ -294,5 +303,12 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getTopLikedFilms(int count) {
         return getPopularFilms(count, null, null);
+    }
+
+    @Override
+    public boolean existsById(int id) {
+        String sql = "SELECT COUNT(*) FROM films WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
     }
 }

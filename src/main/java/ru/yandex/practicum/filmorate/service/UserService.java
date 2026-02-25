@@ -91,4 +91,20 @@ public class UserService {
             throw new IllegalArgumentException("Дата рождения не может быть в будущем");
         }
     }
+
+    public boolean existsById(int id) {
+        try {
+            return userStorage.getById(id) != null;
+        } catch (NotFoundException e) {
+            return false;
+        }
+    }
+
+    public boolean userExists(int id) {
+        try {
+            return getById(id) != null;
+        } catch (NotFoundException e) {
+            return false;
+        }
+    }
 }

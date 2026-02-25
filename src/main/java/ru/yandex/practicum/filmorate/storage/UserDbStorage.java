@@ -63,6 +63,24 @@ public class UserDbStorage implements UserStorage {
         return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
     }
 
+    public Optional<User> getByIdOptional(int id) {
+        String sql = "SELECT id, email, login, name, birthday FROM users WHERE id = ?";
+        List<User> result = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            User u = new User();
+            u.setId(rs.getInt("id"));
+            u.setEmail(rs.getString("email"));
+            u.setLogin(rs.getString("login"));
+            u.setName(rs.getString("name"));
+            u.setBirthday(rs.getDate("birthday").toLocalDate());
+            return u;
+        }, id);
+
+        if (result.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(result.get(0));
+    }
+
     @Override
     public List<User> getAll() {
         String sql = "SELECT id, email, login, name, birthday FROM users";
@@ -126,5 +144,12 @@ public class UserDbStorage implements UserStorage {
     public void delete(int userId) {
         String sql = "DELETE FROM users WHERE id = ?";
         jdbcTemplate.update(sql, userId);
+    }
+
+    @Override
+    public boolean existsById(int id) {
+        String sql = "SELECT COUNT(*) FROM users WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
     }
 }

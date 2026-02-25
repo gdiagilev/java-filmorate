@@ -65,6 +65,10 @@ public class FilmService {
         return filmStorage.getById(id);
     }
 
+    public Optional<Film> getByIdOptional(int id) {
+        return filmStorage.getByIdOptional(id);
+    }
+
     public List<Film> getAll() {
         return filmStorage.getAll();
     }
@@ -187,5 +191,17 @@ public class FilmService {
             }
         }
         film.setDirectors(enriched);
+    }
+
+    public boolean existsById(int id) {
+        try {
+            return filmStorage.getById(id) != null;
+        } catch (NotFoundException e) {
+            return false;
+        }
+    }
+
+    public boolean filmExists(int filmId) {
+        return filmStorage.getByIdOptional(filmId).isPresent();
     }
 }

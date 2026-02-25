@@ -24,4 +24,5 @@ public interface UserStorage {
 
     void delete(int userId);
 
+    boolean existsById(int id);
 }

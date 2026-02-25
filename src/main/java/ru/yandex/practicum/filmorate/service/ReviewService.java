@@ -26,23 +26,24 @@ public class ReviewService {
 
     public Review add(Review review) {
 
-        if (review.getUserId() <= 0 ||
-                userStorage.getById(review.getUserId()) == null) {
+        if (!userStorage.existsById(review.getUserId())) {
             throw new ValidationException("Invalid userId");
         }
 
-        if (review.getFilmId() <= 0 ||
-                filmStorage.getById(review.getFilmId()) == null) {
+        if (!filmStorage.existsById(review.getFilmId())) {
             throw new ValidationException("Invalid filmId");
         }
 
         validateReview(review);
 
         Review created = reviewStorage.add(review);
-        eventService.addEvent(review.getUserId(),
+
+        eventService.addEvent(
+                review.getUserId(),
                 EventType.REVIEW,
                 Operation.ADD,
-                created.getReviewId());
+                created.getReviewId()
+        );
 
         return created;
     }
@@ -92,8 +93,14 @@ public class ReviewService {
     }
 
     private void validateReview(Review review) {
-        userService.getById(review.getUserId());
-        filmService.getById(review.getFilmId());
+
+        if (review.getContent() == null || review.getContent().isBlank()) {
+            throw new ValidationException("Review content cannot be empty");
+        }
+
+        if (review.getIsPositive() == null) {
+            throw new ValidationException("Review like/dislike must be specified");
+        }
     }
 
     private void validateUser(int userId) {
