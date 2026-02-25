@@ -86,12 +86,13 @@ public class UserDbStorage implements UserStorage {
 
         String sql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
         jdbcTemplate.update(sql, userId, friendId);
+        jdbcTemplate.update(sql, friendId, userId); // <-- обратная связь
     }
 
     @Override
     public void removeFriend(int userId, int friendId) {
-        String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
-        jdbcTemplate.update(sql, userId, friendId);
+        String sql = "DELETE FROM friendships WHERE (user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?)";
+        jdbcTemplate.update(sql, userId, friendId, friendId, userId);
     }
 
     @Override

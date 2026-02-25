@@ -14,24 +14,23 @@ public interface FilmStorage {
 
     List<Film> getAll();
 
+    void delete(int filmId);
+
     void addLike(int filmId, int userId);
 
     void removeLike(int filmId, int userId);
 
-    List<Film> getTopLikedFilms(int count);
+    List<Film> getPopularFilms(int count, Integer genreId, Integer year);
 
     List<Film> getCommonFilms(int userId, int friendId);
 
-    List<Film> getPopularFilms(int count, Integer genreId, Integer year);
-
-    void delete(int filmId);
-
-
-    List<Film> getFilmsByDirectorIdSortedByYear(int id);
-
-    List<Film> getFilmsByDirectorIdSortedByLikes(int id);
-
     List<Film> getRecommendations(int userId);
 
-    List<Film> search(String query, List<String> fields);
+    List<Film> search(String query, List<String> by);
+
+    List<Film> getFilmsByDirectorIdSortedByYear(int directorId);
+
+    List<Film> getFilmsByDirectorIdSortedByLikes(int directorId);
+
+    List<Film> getTopLikedFilms(int count);
 }

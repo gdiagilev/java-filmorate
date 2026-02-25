@@ -60,7 +60,6 @@ CREATE TABLE film_likes (
     CONSTRAINT fk_film_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-
 CREATE TABLE film_directors (
     film_id INT NOT NULL,
     director_id INT NOT NULL,
@@ -76,7 +75,6 @@ CREATE TABLE friendships (
     CONSTRAINT fk_friendships_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_friendships_friend FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
 
 CREATE TABLE events (
     event_id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -106,3 +104,18 @@ CREATE TABLE review_likes (
     CONSTRAINT fk_review_likes_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
     CONSTRAINT fk_review_likes_user   FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE
 );
+
+INSERT INTO mpa (id, name) VALUES
+(1, 'G'),
+(2, 'PG'),
+(3, 'PG-13'),
+(4, 'R'),
+(5, 'NC-17');
+
+INSERT INTO genres (id, name) VALUES
+(1, 'Комедия'),
+(2, 'Драма'),
+(3, 'Мультфильм'),
+(4, 'Триллер'),
+(5, 'Документальный'),
+(6, 'Боевик');

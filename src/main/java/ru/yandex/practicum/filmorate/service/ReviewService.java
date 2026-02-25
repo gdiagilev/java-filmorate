@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
 
@@ -16,19 +18,26 @@ public class ReviewService {
     private final ReviewStorage reviewStorage;
     private final UserService userService;
     private final FilmService filmService;
+    private final EventService eventService;
 
     public Review add(Review review) {
         validateReview(review);
-        return reviewStorage.add(review);
+        Review created = reviewStorage.add(review);
+        eventService.addEvent(review.getUserId(), EventType.REVIEW, Operation.ADD, created.getReviewId());
+        return created;
     }
 
     public Review update(Review review) {
         reviewStorage.getReview(review.getReviewId());
-        return reviewStorage.update(review);
+        Review updated = reviewStorage.update(review);
+        eventService.addEvent(review.getUserId(), EventType.REVIEW, Operation.UPDATE, updated.getReviewId());
+        return updated;
     }
 
     public void delete(int id) {
+        Review review = reviewStorage.getReview(id);
         reviewStorage.delete(id);
+        eventService.addEvent(review.getUserId(), EventType.REVIEW, Operation.REMOVE, review.getReviewId());
     }
 
     public Review getById(int id) {
@@ -63,17 +72,8 @@ public class ReviewService {
     }
 
     private void validateReview(Review review) {
-        Integer userId = review.getUserId();
-        Integer filmId = review.getFilmId();
-
-        if (userId == null || userId == 0) {
-            throw new ValidationException("Пользователь с id=" + userId + " не найден");
-        }
-        if (filmId == null || filmId == 0) {
-            throw new ValidationException("Фильм с id=" + filmId + " не найден");
-        }
-        userService.getById(userId);
-        filmService.getById(filmId);
+        userService.getById(review.getUserId());
+        filmService.getById(review.getFilmId());
     }
 
     private void validateUser(int userId) {
@@ -84,4 +84,3 @@ public class ReviewService {
         }
     }
 }
-

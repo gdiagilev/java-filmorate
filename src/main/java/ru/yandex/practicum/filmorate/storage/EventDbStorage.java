@@ -33,8 +33,8 @@ public class EventDbStorage implements EventStorage {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"event_id"});
             ps.setLong(1, event.getTimestamp());
             ps.setLong(2, event.getUserId());
-            ps.setString(3, event.getEventType().name()); // enum → строка
-            ps.setString(4, event.getOperation().name()); // enum → строка
+            ps.setString(3, event.getEventType().name());
+            ps.setString(4, event.getOperation().name());
             ps.setLong(5, event.getEntityId());
             return ps;
         }, keyHolder);
@@ -46,13 +46,11 @@ public class EventDbStorage implements EventStorage {
     @Override
     public List<Event> getUserFeed(long userId) {
         String sql = """
-                SELECT e.*
+                SELECT e.event_id, e.timestamp, e.user_id, e.event_type, e.operation, e.entity_id
                 FROM events e
-                JOIN friendships f ON e.user_id = f.friend_id
-                WHERE f.user_id = ?
-                ORDER BY e.timestamp DESC
+                WHERE e.user_id = ?
+                ORDER BY e.event_id ASC
                 """;
-
         return jdbcTemplate.query(sql, this::mapRow, userId);
     }
 

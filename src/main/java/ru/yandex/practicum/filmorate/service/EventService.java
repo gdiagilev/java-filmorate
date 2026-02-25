@@ -2,9 +2,7 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.model.Event;
-import ru.yandex.practicum.filmorate.model.EventType;
-import ru.yandex.practicum.filmorate.model.Operation;
+import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.EventStorage;
 
 import java.util.List;

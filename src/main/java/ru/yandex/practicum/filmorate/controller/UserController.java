@@ -62,19 +62,19 @@ public class UserController {
         return userService.getCommonFriends(id, otherId);
     }
 
-    @GetMapping("/users/{id}/feed")
-    public List<Event> getFeed(@PathVariable long id) {
+    @GetMapping("/{id}/feed")
+    public List<Event> getFeed(@PathVariable int id) {
         return eventService.getFeed(id);
     }
 
-    @DeleteMapping("/{userId}")
-    public void deleteUser(@PathVariable int userId) {
-        userService.deleteUser(userId);
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable int id) {
+        userService.deleteUser(id);
     }
 
     @GetMapping("/{id}/recommendations")
     public List<Film> getRecommendations(@PathVariable int id) {
-        List<Film> result = userService.getRecommendations(id);
-        return result;
+        return userService.getRecommendations(id);
     }
 }
