@@ -40,14 +40,18 @@ public class UserService {
     public void addFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
+
         userStorage.addFriend(userId, friendId);
+
         eventService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
     }
 
     public void removeFriend(int userId, int friendId) {
         getById(userId);
         getById(friendId);
+
         userStorage.removeFriend(userId, friendId);
+
         eventService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
     }
 

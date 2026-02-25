@@ -25,18 +25,40 @@ public class FilmService {
     public Film create(Film film) {
         setDefaultMpaIfNull(film);
         validateFilm(film);
+
+        checkMpa(film);
+        checkGenres(film);
+
         enrichFilm(film);
         Film savedFilm = filmStorage.add(film);
-        return getById(savedFilm.getId());
+
+        Film maybeFilm = filmStorage.getById(savedFilm.getId());
+        if (maybeFilm == null) {
+            throw new NotFoundException("Film not found after creation");
+        }
+        return maybeFilm;
     }
 
     public Film update(Film film) {
-        filmStorage.getById(film.getId());
+        Film existingFilm = filmStorage.getById(film.getId());
+        if (existingFilm == null) {
+            throw new NotFoundException("Film not found");
+        }
+
         setDefaultMpaIfNull(film);
         validateFilm(film);
+
+        checkMpa(film);
+        checkGenres(film);
+
         enrichFilm(film);
         filmStorage.update(film);
-        return getById(film.getId());
+
+        Film updatedFilm = filmStorage.getById(film.getId());
+        if (updatedFilm == null) {
+            throw new NotFoundException("Film not found after update");
+        }
+        return updatedFilm;
     }
 
     public Film getById(int id) {
@@ -108,10 +130,26 @@ public class FilmService {
         return films;
     }
 
+    private void checkMpa(Film film) {
+        if (film.getMpa() != null && mpaStorage.getById(film.getMpa().getId()).isEmpty()) {
+            throw new NotFoundException("MPA not found");
+        }
+    }
+
+    private void checkGenres(Film film) {
+        if (film.getGenres() != null) {
+            for (var genre : film.getGenres()) {
+                if (genreStorage.getById(genre.getId()).isEmpty()) {
+                    throw new NotFoundException("Genre not found");
+                }
+            }
+        }
+    }
+
     private void setDefaultMpaIfNull(Film film) {
         if (film.getMpa() == null) {
-            MpaRating defaultMpa = new MpaRating();
-            defaultMpa.setId(1); // G
+            var defaultMpa = mpaStorage.getById(1)
+                    .orElseThrow(() -> new NotFoundException("Default MPA not found"));
             film.setMpa(defaultMpa);
         }
     }

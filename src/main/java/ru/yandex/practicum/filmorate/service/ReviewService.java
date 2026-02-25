@@ -7,7 +7,9 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.EventType;
 import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.Review;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.util.List;
 
@@ -19,11 +21,29 @@ public class ReviewService {
     private final UserService userService;
     private final FilmService filmService;
     private final EventService eventService;
+    private final UserStorage userStorage;
+    private final FilmStorage filmStorage;
 
     public Review add(Review review) {
+
+        if (review.getUserId() <= 0 ||
+                userStorage.getById(review.getUserId()) == null) {
+            throw new ValidationException("Invalid userId");
+        }
+
+        if (review.getFilmId() <= 0 ||
+                filmStorage.getById(review.getFilmId()) == null) {
+            throw new ValidationException("Invalid filmId");
+        }
+
         validateReview(review);
+
         Review created = reviewStorage.add(review);
-        eventService.addEvent(review.getUserId(), EventType.REVIEW, Operation.ADD, created.getReviewId());
+        eventService.addEvent(review.getUserId(),
+                EventType.REVIEW,
+                Operation.ADD,
+                created.getReviewId());
+
         return created;
     }
 
