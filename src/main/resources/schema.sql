@@ -92,8 +92,8 @@ CREATE TABLE reviews (
     user_id INT NOT NULL,
     film_id INT NOT NULL,
     useful INT NOT NULL,
-    CONSTRAINT fk_reviews_user FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT fk_reviews_films FOREIGN KEY (film_id) REFERENCES films(id)
+    CONSTRAINT fk_reviews_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_reviews_films FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE
 );
 
 CREATE TABLE review_likes (
