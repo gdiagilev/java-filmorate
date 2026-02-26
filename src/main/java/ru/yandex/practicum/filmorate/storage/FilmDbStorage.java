@@ -154,11 +154,37 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getRecommendations(int userId) {
-        String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
-                "FROM films f JOIN mpa m ON f.mpa_id=m.id " +
-                "WHERE f.id NOT IN (SELECT film_id FROM film_likes WHERE user_id=?) LIMIT 10";
+        // Находим пользователя с максимальным количеством общих лайков с текущим
+        String similarUserSql = """
+        SELECT l2.user_id
+        FROM film_likes l1
+        JOIN film_likes l2 ON l1.film_id = l2.film_id AND l2.user_id != l1.user_id
+        WHERE l1.user_id = ?
+        GROUP BY l2.user_id
+        ORDER BY COUNT(*) DESC
+        LIMIT 1
+    """;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> mapFilmWithRelations(rs), userId);
+        List<Integer> similarUsers = jdbcTemplate.queryForList(similarUserSql, Integer.class, userId);
+        if (similarUsers.isEmpty()) {
+            return Collections.emptyList();
+        }
+        int similarUserId = similarUsers.get(0);
+
+        // Рекомендуем фильмы, которые лайкнул похожий пользователь, но не лайкнул текущий
+        String sql = """
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name
+        FROM films f
+        JOIN mpa m ON f.mpa_id = m.id
+        WHERE f.id IN (
+            SELECT film_id FROM film_likes WHERE user_id = ?
+        ) AND f.id NOT IN (
+            SELECT film_id FROM film_likes WHERE user_id = ?
+        )
+        ORDER BY (SELECT COUNT(*) FROM film_likes WHERE film_id = f.id) DESC
+    """;
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> mapFilmWithRelations(rs), similarUserId, userId);
     }
 
     @Override
