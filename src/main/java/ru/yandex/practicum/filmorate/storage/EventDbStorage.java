@@ -6,8 +6,6 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Event;
-import ru.yandex.practicum.filmorate.model.EventType;
-import ru.yandex.practicum.filmorate.model.Operation;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
