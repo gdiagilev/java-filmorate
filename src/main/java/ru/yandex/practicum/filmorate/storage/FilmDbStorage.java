@@ -12,6 +12,7 @@ import java.sql.*;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -162,16 +163,25 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> search(String query, List<String> fields) {
+        List<String> normalizedFields = fields.stream()
+                .map(String::toLowerCase)
+                .map(String::trim)
+                .collect(Collectors.toList());
+
         StringBuilder where = new StringBuilder();
         List<Object> params = new ArrayList<>();
-        if (fields.contains("title") && fields.contains("director")) {
+
+        boolean searchTitle = normalizedFields.contains("title");
+        boolean searchDirector = normalizedFields.contains("director");
+
+        if (searchTitle && searchDirector) {
             where.append("(LOWER(f.name) LIKE LOWER(?) OR LOWER(d.name) LIKE LOWER(?))");
             params.add("%" + query + "%");
             params.add("%" + query + "%");
-        } else if (fields.contains("title")) {
+        } else if (searchTitle) {
             where.append("LOWER(f.name) LIKE LOWER(?)");
             params.add("%" + query + "%");
-        } else if (fields.contains("director")) {
+        } else if (searchDirector) {
             where.append("LOWER(d.name) LIKE LOWER(?)");
             params.add("%" + query + "%");
         } else {
@@ -180,10 +190,13 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
-                "FROM films f JOIN mpa m ON f.mpa_id=m.id " +
-                "LEFT JOIN film_directors fd ON f.id=fd.film_id " +
-                "LEFT JOIN directors d ON fd.director_id=d.id " +
-                "WHERE " + where + " GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name";
+                "FROM films f " +
+                "JOIN mpa m ON f.mpa_id = m.id " +
+                "LEFT JOIN film_directors fd ON f.id = fd.film_id " +
+                "LEFT JOIN directors d ON fd.director_id = d.id " +
+                "WHERE " + where + " " +
+                "GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name " +
+                "ORDER BY f.id DESC";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> mapFilmWithRelations(rs), params.toArray());
     }

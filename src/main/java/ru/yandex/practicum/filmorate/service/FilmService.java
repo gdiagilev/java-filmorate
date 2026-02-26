@@ -141,7 +141,8 @@ public class FilmService {
     }
 
     public List<Film> search(String query, String by) {
-        return filmStorage.search(query, Arrays.asList(by.split(",")));
+        List<String> fields = (by == null || by.isBlank()) ? List.of("title") : Arrays.asList(by.split(","));
+        return filmStorage.search(query, fields);
     }
 
     public void addDirectorToFilm(int filmId, int directorId) {
