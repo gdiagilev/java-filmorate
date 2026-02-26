@@ -61,7 +61,7 @@ public class FilmController {
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @ResponseStatus(HttpStatus.OK)
     public void removeLike(@PathVariable int id, @PathVariable int userId) {
         userService.getById(userId);
         filmService.removeLike(id, userId);
@@ -75,9 +75,14 @@ public class FilmController {
     }
 
     @GetMapping("/director/{directorId}")
-    public List<Film> getFilmsByDirector(
-            @PathVariable int directorId,
-            @RequestParam(name = "sortBy", defaultValue = "year") String sortBy) {
+    public List<Film> getFilmsByDirector(@PathVariable int directorId,
+                                         @RequestParam(name = "sortBy", defaultValue = "year") String sortBy) {
         return filmService.getFilmsByDirector(directorId, sortBy);
+    }
+
+    @GetMapping("/common")
+    public List<Film> getCommonFilms(@RequestParam("userId") int userId,
+                                     @RequestParam("friendId") int friendId) {
+        return filmService.getCommonFilms(userId, friendId);
     }
 }

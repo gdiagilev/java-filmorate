@@ -95,7 +95,6 @@ public class UserDbStorage implements UserStorage {
         });
     }
 
-
     @Override
     public boolean addFriend(int userId, int friendId) {
         String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
