@@ -102,20 +102,5 @@ CREATE TABLE review_likes (
     is_like   BOOLEAN NOT NULL,
     PRIMARY KEY (review_id, user_id),
     CONSTRAINT fk_review_likes_review FOREIGN KEY (review_id) REFERENCES reviews(id) ON DELETE CASCADE,
-    CONSTRAINT fk_review_likes_user   FOREIGN KEY (user_id)   REFERENCES users(id)   ON DELETE CASCADE
+    CONSTRAINT fk_review_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
-INSERT INTO mpa (id, name) VALUES
-(1, 'G'),
-(2, 'PG'),
-(3, 'PG-13'),
-(4, 'R'),
-(5, 'NC-17');
-
-INSERT INTO genres (id, name) VALUES
-(1, 'Комедия'),
-(2, 'Драма'),
-(3, 'Мультфильм'),
-(4, 'Триллер'),
-(5, 'Документальный'),
-(6, 'Боевик');
