@@ -39,34 +39,49 @@ public class UserService {
         return userStorage.getAll();
     }
 
-    public void addFriend(int userId, int friendId) {
-        getById(userId);
-        getById(friendId);
-
-        userStorage.addFriend(userId, friendId);
-
-        eventService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
+    private void validateUser(int userId) {
+        if (!userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
     }
 
-    public void removeFriend(int userId, int friendId) {
-        getById(userId);
-        getById(friendId);
+    public boolean addFriend(int userId, int friendId) {
+        validateUser(userId);
+        validateUser(friendId);
 
-        userStorage.removeFriend(userId, friendId);
+        boolean added = userStorage.addFriend(userId, friendId);
+        if (added) {
+            eventService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
+        }
+        return added;
+    }
 
-        eventService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
+    public boolean removeFriend(int userId, int friendId) {
+        validateUser(userId);
+        validateUser(friendId);
+
+        boolean removed = userStorage.removeFriend(userId, friendId);
+        if (removed) {
+            eventService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
+        }
+        return removed;
+    }
+
+    private void validateUserExists(int userId) {
+        if (userId <= 0 || !userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
     }
 
     public List<User> getFriends(int userId) {
-        getById(userId);
+        validateUser(userId);
         return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        List<User> friends1 = getFriends(userId);
-        List<User> friends2 = getFriends(otherId);
-        friends1.retainAll(friends2);
-        return friends1;
+        validateUser(userId);
+        validateUser(otherId);
+        return userStorage.getCommonFriends(userId, otherId);
     }
 
     public void deleteUser(int userId) {

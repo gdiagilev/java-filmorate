@@ -46,22 +46,25 @@ public class EventDbStorage implements EventStorage {
     @Override
     public List<Event> getUserFeed(long userId) {
         String sql = """
-                SELECT e.event_id, e.timestamp, e.user_id, e.event_type, e.operation, e.entity_id
-                FROM events e
-                WHERE e.user_id = ?
-                ORDER BY e.event_id ASC
+                SELECT event_id, user_id, event_type, operation, entity_id, timestamp
+                FROM events
+                WHERE user_id = ?
+                ORDER BY timestamp ASC
                 """;
+
         return jdbcTemplate.query(sql, this::mapRow, userId);
     }
 
     private Event mapRow(ResultSet rs, int rowNum) throws SQLException {
         Event event = new Event();
         event.setEventId(rs.getLong("event_id"));
-        event.setTimestamp(rs.getLong("timestamp"));
         event.setUserId(rs.getLong("user_id"));
-        event.setEventType(EventType.valueOf(rs.getString("event_type")));
-        event.setOperation(Operation.valueOf(rs.getString("operation")));
+        event.setEventType(Enum.valueOf(ru.yandex.practicum.filmorate.model.EventType.class,
+                rs.getString("event_type")));
+        event.setOperation(Enum.valueOf(ru.yandex.practicum.filmorate.model.Operation.class,
+                rs.getString("operation")));
         event.setEntityId(rs.getLong("entity_id"));
+        event.setTimestamp(rs.getLong("timestamp"));
         return event;
     }
 }

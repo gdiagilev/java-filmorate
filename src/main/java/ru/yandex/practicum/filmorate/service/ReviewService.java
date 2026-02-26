@@ -23,13 +23,8 @@ public class ReviewService {
 
     public Review add(Review review) {
         validateReview(review);
-
-        if (!userStorage.existsById(review.getUserId())) {
-            throw new NotFoundException("Пользователь с id=" + review.getUserId() + " не найден");
-        }
-        if (!filmStorage.existsById(review.getFilmId())) {
-            throw new NotFoundException("Фильм с id=" + review.getFilmId() + " не найден");
-        }
+        validateUser(review.getUserId());
+        validateFilm(review.getFilmId());
 
         Review created = reviewStorage.add(review);
         eventService.addEvent(review.getUserId(), EventType.REVIEW, Operation.ADD, created.getReviewId());
@@ -42,7 +37,7 @@ public class ReviewService {
 
         validateReview(review);
         Review updated = reviewStorage.update(review);
-        eventService.addEvent(review.getUserId(), EventType.REVIEW, Operation.UPDATE, updated.getReviewId());
+        eventService.addEvent(updated.getUserId(), EventType.REVIEW, Operation.UPDATE, updated.getReviewId());
         return updated;
     }
 
@@ -54,44 +49,67 @@ public class ReviewService {
         eventService.addEvent(review.getUserId(), EventType.REVIEW, Operation.REMOVE, review.getReviewId());
     }
 
-    public Review getById(int id) {
-        return reviewStorage.getReview(id);
+    public Review getById(int reviewId) {
+        Review review = reviewStorage.getReview(reviewId);
+        if (review == null) throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
+        return review;
     }
 
     public List<Review> getReviews(Integer filmId, int count) {
-        if (filmId != null && filmId > 0 && !filmStorage.existsById(filmId)) {
-            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
-        }
+        if (filmId != null && filmId > 0) validateFilm(filmId);
         return reviewStorage.getReviews(filmId != null ? filmId : 0, count);
     }
 
-    public void addLike(int reviewId, Integer userId) {
+    // =================== Лайки / Дизлайки ===================
+
+    public void addLike(int reviewId, int userId) {
         validateUser(userId);
         reviewStorage.addLike(reviewId, userId);
-        eventService.addEvent(userId, EventType.REVIEW, Operation.ADD, reviewId);
+        eventService.addEvent(userId, EventType.LIKE, Operation.ADD, reviewId);
     }
 
-    public void removeLike(int reviewId, Integer userId) {
+    public void removeLike(int reviewId, int userId) {
         validateUser(userId);
         reviewStorage.removeLike(reviewId, userId);
-        eventService.addEvent(userId, EventType.REVIEW, Operation.REMOVE, reviewId);
+        eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, reviewId);
     }
 
-    public void addDislike(int reviewId, Integer userId) {
+    public void addDislike(int reviewId, int userId) {
         validateUser(userId);
         reviewStorage.addDislike(reviewId, userId);
-        eventService.addEvent(userId, EventType.REVIEW, Operation.REMOVE, reviewId);
+        eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, reviewId); // дислайк = "удаление лайка"
     }
 
-    public void removeDislike(int reviewId, Integer userId) {
+    public void removeDislike(int reviewId, int userId) {
         validateUser(userId);
         reviewStorage.removeDislike(reviewId, userId);
-        eventService.addEvent(userId, EventType.REVIEW, Operation.ADD, reviewId);
+        eventService.addEvent(userId, EventType.LIKE, Operation.ADD, reviewId); // убрать дислайк = "добавить лайк"
     }
 
-    private void validateUser(Integer userId) {
+    // =================== Валидация ===================
+
+    private void validateUser(int userId) {
+        if (!userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+    }
+
+    private void validateFilm(int filmId) {
+        if (!filmStorage.existsById(filmId)) {
+            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
+        }
+    }
+
+    private void validateUserExists(Integer userId) {
         if (userId == null || userId <= 0 || !userStorage.existsById(userId)) {
             throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+    }
+
+
+    private void validateReviewExists(int reviewId) {
+        if (reviewStorage.getReview(reviewId) == null) {
+            throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
         }
     }
 

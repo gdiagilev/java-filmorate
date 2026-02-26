@@ -24,6 +24,7 @@ public class FilmService {
     private final DirectorStorage directorStorage;
     private final DirectorService directorService;
     private final EventService eventService;
+    private final UserStorage userStorage;
 
     public Film create(Film film) {
         setDefaultMpaIfNull(film);
@@ -81,14 +82,50 @@ public class FilmService {
         filmStorage.delete(filmId);
     }
 
-    public void addLike(int filmId, int userId) {
-        filmStorage.addLike(filmId, userId);
-        eventService.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
+    private void validateUser(int userId) {
+        if (!userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
     }
 
-    public void removeLike(int filmId, int userId) {
-        filmStorage.removeLike(filmId, userId);
-        eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
+    private void validateFilm(int filmId) {
+        if (!filmStorage.existsById(filmId)) {
+            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
+        }
+    }
+
+    public boolean addLike(int filmId, int userId) {
+        validateFilmExists(filmId);
+        validateUserExists(userId);
+
+        boolean added = filmStorage.addLike(filmId, userId);
+        if (added) {
+            eventService.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
+        }
+        return added;
+    }
+
+    public boolean removeLike(int filmId, int userId) {
+        validateFilmExists(filmId);
+        validateUserExists(userId);
+
+        boolean removed = filmStorage.removeLike(filmId, userId);
+        if (removed) {
+            eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
+        }
+        return removed;
+    }
+
+    private void validateFilmExists(int filmId) {
+        if (filmId <= 0 || !filmStorage.existsById(filmId)) {
+            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
+        }
+    }
+
+    private void validateUserExists(int userId) {
+        if (userId <= 0 || !userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
+        }
     }
 
     public List<Film> getPopularFilms(int count, Integer genreId, Integer year) {

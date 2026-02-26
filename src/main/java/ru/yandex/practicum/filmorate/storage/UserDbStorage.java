@@ -97,19 +97,24 @@ public class UserDbStorage implements UserStorage {
 
 
     @Override
-    public void addFriend(int userId, int friendId) {
+    public boolean addFriend(int userId, int friendId) {
         String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
-        if (count != null && count > 0) return;
 
-        String sql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
-        jdbcTemplate.update(sql, userId, friendId);
+        if (count != null && count > 0) {
+            return false;
+        }
+
+        String insertSql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
+        jdbcTemplate.update(insertSql, userId, friendId);
+
+        return true;
     }
 
     @Override
-    public void removeFriend(int userId, int friendId) {
-        String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
-        jdbcTemplate.update(sql, userId, friendId);
+    public boolean removeFriend(int userId, int friendId) {
+        String deleteSql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
+        return jdbcTemplate.update(deleteSql, userId, friendId) > 0;
     }
 
     @Override

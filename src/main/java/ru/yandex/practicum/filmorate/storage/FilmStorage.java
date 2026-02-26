@@ -17,9 +17,9 @@ public interface FilmStorage {
 
     void delete(int filmId);
 
-    void addLike(int filmId, int userId);
+    boolean addLike(int filmId, int userId);
 
-    void removeLike(int filmId, int userId);
+    boolean removeLike(int filmId, int userId);
 
     List<Film> getPopularFilms(int count, Integer genreId, Integer year);
 
