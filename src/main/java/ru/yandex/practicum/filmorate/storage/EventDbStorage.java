@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
 @Repository
 @RequiredArgsConstructor
@@ -19,7 +20,7 @@ public class EventDbStorage implements EventStorage {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public Event addEvent(Event event) {
+    public void addEvent(Event event) {
         String sql = """
                 INSERT INTO events (timestamp, user_id, event_type, operation, entity_id)
                 VALUES (?, ?, ?, ?, ?)
@@ -37,8 +38,7 @@ public class EventDbStorage implements EventStorage {
             return ps;
         }, keyHolder);
 
-        event.setEventId(keyHolder.getKey().longValue());
-        return event;
+        event.setEventId(Objects.requireNonNull(keyHolder.getKey()).longValue());
     }
 
     @Override
@@ -56,7 +56,7 @@ public class EventDbStorage implements EventStorage {
     private Event mapRow(ResultSet rs, int rowNum) throws SQLException {
         Event event = new Event();
         event.setEventId(rs.getLong("event_id"));
-        event.setUserId(rs.getLong("user_id"));
+        event.setUserId(rs.getInt("user_id"));
         event.setEventType(Enum.valueOf(ru.yandex.practicum.filmorate.model.EventType.class,
                 rs.getString("event_type")));
         event.setOperation(Enum.valueOf(ru.yandex.practicum.filmorate.model.Operation.class,

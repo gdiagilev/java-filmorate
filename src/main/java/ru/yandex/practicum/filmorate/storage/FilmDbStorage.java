@@ -6,13 +6,15 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.model.Director;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.MpaRating;
 
 import java.sql.*;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -75,16 +77,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapFilmWithRelations(rs), id);
 
         if (films.isEmpty()) throw new NotFoundException("Фильм с id=" + id + " не найден");
-        return films.get(0);
-    }
-
-    public Optional<Film> getByIdOptional(int id) {
-        String sql = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name " +
-                "FROM films f JOIN mpa m ON f.mpa_id = m.id WHERE f.id=?";
-
-        List<Film> films = jdbcTemplate.query(sql, (rs, rowNum) -> mapFilmWithRelations(rs), id);
-
-        return films.isEmpty() ? Optional.empty() : Optional.of(films.get(0));
+        return films.getFirst();
     }
 
     @Override
@@ -101,26 +94,24 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public boolean addLike(int filmId, int userId) {
+    public void addLike(int filmId, int userId) {
         String checkSql = "SELECT COUNT(*) FROM film_likes WHERE film_id = ? AND user_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, filmId, userId);
 
-        if (count != null && count > 0) {
-            return false; // лайк уже есть
+        if (count > 0) {
+            return;
         }
 
         String insertSql = "INSERT INTO film_likes (film_id, user_id) VALUES (?, ?)";
         jdbcTemplate.update(insertSql, filmId, userId);
 
-        return true;
     }
 
     @Override
-    public boolean removeLike(int filmId, int userId) {
+    public void removeLike(int filmId, int userId) {
         String deleteSql = "DELETE FROM film_likes WHERE film_id = ? AND user_id = ?";
-        int rows = jdbcTemplate.update(deleteSql, filmId, userId);
+        jdbcTemplate.update(deleteSql, filmId, userId);
 
-        return rows > 0;
     }
 
     @Override
@@ -156,33 +147,33 @@ public class FilmDbStorage implements FilmStorage {
     public List<Film> getRecommendations(int userId) {
         // Находим пользователя с максимальным количеством общих лайков с текущим
         String similarUserSql = """
-        SELECT l2.user_id
-        FROM film_likes l1
-        JOIN film_likes l2 ON l1.film_id = l2.film_id AND l2.user_id != l1.user_id
-        WHERE l1.user_id = ?
-        GROUP BY l2.user_id
-        ORDER BY COUNT(*) DESC
-        LIMIT 1
-    """;
+                    SELECT l2.user_id
+                    FROM film_likes l1
+                    JOIN film_likes l2 ON l1.film_id = l2.film_id AND l2.user_id != l1.user_id
+                    WHERE l1.user_id = ?
+                    GROUP BY l2.user_id
+                    ORDER BY COUNT(*) DESC
+                    LIMIT 1
+                """;
 
         List<Integer> similarUsers = jdbcTemplate.queryForList(similarUserSql, Integer.class, userId);
         if (similarUsers.isEmpty()) {
             return Collections.emptyList();
         }
-        int similarUserId = similarUsers.get(0);
+        int similarUserId = similarUsers.getFirst();
 
         // Рекомендуем фильмы, которые лайкнул похожий пользователь, но не лайкнул текущий
         String sql = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name
-        FROM films f
-        JOIN mpa m ON f.mpa_id = m.id
-        WHERE f.id IN (
-            SELECT film_id FROM film_likes WHERE user_id = ?
-        ) AND f.id NOT IN (
-            SELECT film_id FROM film_likes WHERE user_id = ?
-        )
-        ORDER BY (SELECT COUNT(*) FROM film_likes WHERE film_id = f.id) DESC
-    """;
+                    SELECT f.id, f.name, f.description, f.release_date, f.duration, f.mpa_id, m.name AS mpa_name
+                    FROM films f
+                    JOIN mpa m ON f.mpa_id = m.id
+                    WHERE f.id IN (
+                        SELECT film_id FROM film_likes WHERE user_id = ?
+                    ) AND f.id NOT IN (
+                        SELECT film_id FROM film_likes WHERE user_id = ?
+                    )
+                    ORDER BY (SELECT COUNT(*) FROM film_likes WHERE film_id = f.id) DESC
+                """;
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> mapFilmWithRelations(rs), similarUserId, userId);
     }
@@ -192,7 +183,7 @@ public class FilmDbStorage implements FilmStorage {
         List<String> normalizedFields = fields.stream()
                 .map(String::toLowerCase)
                 .map(String::trim)
-                .collect(Collectors.toList());
+                .toList();
 
         StringBuilder where = new StringBuilder();
         List<Object> params = new ArrayList<>();
@@ -283,8 +274,8 @@ public class FilmDbStorage implements FilmStorage {
         mpa.setName(rs.getString("mpa_name"));
         f.setMpa(mpa);
 
-        f.setGenres(Optional.ofNullable(getGenresByFilmId(f.getId())).orElse(new LinkedHashSet<>()));
-        f.setDirectors(Optional.ofNullable(getDirectorsByFilmId(f.getId())).orElse(new LinkedHashSet<>()));
+        f.setGenres(Optional.of(getGenresByFilmId(f.getId())).orElse(new LinkedHashSet<>()));
+        f.setDirectors(Optional.of(getDirectorsByFilmId(f.getId())).orElse(new LinkedHashSet<>()));
 
         return f;
     }
@@ -347,14 +338,9 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getTopLikedFilms(int count) {
-        return getPopularFilms(count, null, null);
-    }
-
-    @Override
     public boolean existsById(int id) {
         String sql = "SELECT COUNT(*) FROM films WHERE id = ?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
-        return count != null && count > 0;
+        return count > 0;
     }
 }

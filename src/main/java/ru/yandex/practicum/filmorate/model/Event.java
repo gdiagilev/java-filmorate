@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Event {
     private long eventId;
-    private long userId;
+    private int userId;
     private EventType eventType;
     private Operation operation;
     private long entityId;

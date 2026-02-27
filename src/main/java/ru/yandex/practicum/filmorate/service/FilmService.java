@@ -1,11 +1,11 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.storage.*;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -14,15 +14,12 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FilmService {
 
-    private final JdbcTemplate jdbcTemplate;
-
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
-
+    private final JdbcTemplate jdbcTemplate;
     private final FilmStorage filmStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
     private final DirectorStorage directorStorage;
-    private final DirectorService directorService;
     private final EventService eventService;
     private final UserStorage userStorage;
 
@@ -69,51 +66,31 @@ public class FilmService {
         return filmStorage.getById(id);
     }
 
-    public Optional<Film> getByIdOptional(int id) {
-        return filmStorage.getByIdOptional(id);
-    }
-
     public List<Film> getAll() {
         return filmStorage.getAll();
     }
 
     public void deleteFilm(int filmId) {
-        filmStorage.getById(filmId); // проверка существования
+        filmStorage.getById(filmId);
         filmStorage.delete(filmId);
     }
 
-    private void validateUser(int userId) {
-        if (!userStorage.existsById(userId)) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
-    }
-
-    private void validateFilm(int filmId) {
-        if (!filmStorage.existsById(filmId)) {
-            throw new NotFoundException("Фильм с id=" + filmId + " не найден");
-        }
-    }
-
-    public boolean addLike(int filmId, int userId) {
+    public void addLike(int filmId, int userId) {
         validateFilmExists(filmId);
         validateUserExists(userId);
 
-        boolean added = filmStorage.addLike(filmId, userId);
-        if (added) {
-            eventService.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
-        }
-        return added;
+        filmStorage.addLike(filmId, userId);
+        eventService.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
+
     }
 
-    public boolean removeLike(int filmId, int userId) {
+    public void removeLike(int filmId, int userId) {
         validateFilmExists(filmId);
         validateUserExists(userId);
 
-        boolean removed = filmStorage.removeLike(filmId, userId);
-        if (removed) {
-            eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
-        }
-        return removed;
+        filmStorage.removeLike(filmId, userId);
+        eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
+
     }
 
     private void validateFilmExists(int filmId) {
@@ -143,19 +120,6 @@ public class FilmService {
     public List<Film> search(String query, String by) {
         List<String> fields = (by == null || by.isBlank()) ? List.of("title") : Arrays.asList(by.split(","));
         return filmStorage.search(query, fields);
-    }
-
-    public void addDirectorToFilm(int filmId, int directorId) {
-        Film film = filmStorage.getById(filmId);
-        if (film == null) throw new NotFoundException("Фильм с id=" + filmId + " не найден");
-
-        Director director = directorStorage.getById(directorId);
-        if (director == null) throw new NotFoundException("Режиссёр с id=" + directorId + " не найден");
-
-        if (film.getDirectors() == null) film.setDirectors(new LinkedHashSet<>());
-        film.getDirectors().add(director);
-
-        filmStorage.update(film);
     }
 
     public List<Film> getFilmsByDirector(int directorId, String sortBy) {
@@ -237,10 +201,6 @@ public class FilmService {
     public boolean existsById(int id) {
         String sql = "SELECT COUNT(*) FROM films WHERE id=?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
-        return count != null && count > 0;
-    }
-
-    public boolean filmExists(int filmId) {
-        return filmStorage.getByIdOptional(filmId).isPresent();
+        return count > 0;
     }
 }

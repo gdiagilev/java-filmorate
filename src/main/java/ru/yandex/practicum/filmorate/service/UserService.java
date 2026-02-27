@@ -1,11 +1,14 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.model.*;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Operation;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -45,32 +48,20 @@ public class UserService {
         }
     }
 
-    public boolean addFriend(int userId, int friendId) {
+    public void addFriend(int userId, int friendId) {
         validateUser(userId);
         validateUser(friendId);
+        userStorage.addFriend(userId, friendId);
+        eventService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
 
-        boolean added = userStorage.addFriend(userId, friendId);
-        if (added) {
-            eventService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
-        }
-        return added;
     }
 
-    public boolean removeFriend(int userId, int friendId) {
+    public void removeFriend(int userId, int friendId) {
         validateUser(userId);
         validateUser(friendId);
+        userStorage.removeFriend(userId, friendId);
+        eventService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
 
-        boolean removed = userStorage.removeFriend(userId, friendId);
-        if (removed) {
-            eventService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
-        }
-        return removed;
-    }
-
-    private void validateUserExists(int userId) {
-        if (userId <= 0 || !userStorage.existsById(userId)) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
     }
 
     public List<User> getFriends(int userId) {
@@ -112,14 +103,6 @@ public class UserService {
     public boolean existsById(int id) {
         String sql = "SELECT COUNT(*) FROM users WHERE id=?";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
-        return count != null && count > 0;
-    }
-
-    public boolean userExists(int id) {
-        try {
-            return getById(id) != null;
-        } catch (NotFoundException e) {
-            return false;
-        }
+        return count > 0;
     }
 }

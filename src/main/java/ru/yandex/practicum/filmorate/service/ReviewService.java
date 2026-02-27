@@ -60,33 +60,25 @@ public class ReviewService {
         return reviewStorage.getReviews(filmId != null ? filmId : 0, count);
     }
 
-    // =================== Лайки / Дизлайки ===================
-
     public void addLike(int reviewId, int userId) {
         validateUser(userId);
         reviewStorage.addLike(reviewId, userId);
-        eventService.addEvent(userId, EventType.LIKE, Operation.ADD, reviewId);
     }
 
     public void removeLike(int reviewId, int userId) {
         validateUser(userId);
         reviewStorage.removeLike(reviewId, userId);
-        eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, reviewId);
     }
 
     public void addDislike(int reviewId, int userId) {
         validateUser(userId);
         reviewStorage.addDislike(reviewId, userId);
-        eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, reviewId); // дислайк = "удаление лайка"
     }
 
     public void removeDislike(int reviewId, int userId) {
         validateUser(userId);
         reviewStorage.removeDislike(reviewId, userId);
-        eventService.addEvent(userId, EventType.LIKE, Operation.ADD, reviewId); // убрать дислайк = "добавить лайк"
     }
-
-    // =================== Валидация ===================
 
     private void validateUser(int userId) {
         if (!userStorage.existsById(userId)) {
@@ -97,19 +89,6 @@ public class ReviewService {
     private void validateFilm(int filmId) {
         if (!filmStorage.existsById(filmId)) {
             throw new NotFoundException("Фильм с id=" + filmId + " не найден");
-        }
-    }
-
-    private void validateUserExists(Integer userId) {
-        if (userId == null || userId <= 0 || !userStorage.existsById(userId)) {
-            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
-        }
-    }
-
-
-    private void validateReviewExists(int reviewId) {
-        if (reviewStorage.getReview(reviewId) == null) {
-            throw new NotFoundException("Отзыв с id=" + reviewId + " не найден");
         }
     }
 
