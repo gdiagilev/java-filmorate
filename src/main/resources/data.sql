@@ -1,10 +1,15 @@
+DELETE FROM review_likes;
+DELETE FROM reviews;
 DELETE FROM film_likes;
+DELETE FROM film_directors;
 DELETE FROM film_genres;
 DELETE FROM friendships;
 DELETE FROM films;
 DELETE FROM users;
 DELETE FROM genres;
 DELETE FROM mpa;
+DELETE FROM directors;
+DELETE FROM events;
 
 INSERT INTO mpa (id, name) VALUES
 (1, 'G'),

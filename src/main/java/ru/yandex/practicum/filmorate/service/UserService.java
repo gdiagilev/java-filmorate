@@ -3,6 +3,9 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.model.EventType;
+import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Operation;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
@@ -13,7 +16,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
 
+    private final FilmService filmService;
     private final UserDbStorage userStorage;
+    private final EventService eventService;
 
     public User create(User user) {
         validateUser(user);
@@ -28,60 +33,72 @@ public class UserService {
 
     public User getById(int id) {
         return userStorage.getById(id)
-                .orElseThrow(() ->
-                        new NotFoundException("Пользователь с id=" + id + " не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + id + " не найден"));
     }
 
     public List<User> getAll() {
         return userStorage.getAll();
     }
 
-    public void addFriend(int userId, int friendId) {
-        getById(userId);
-        getById(friendId);
-        try {
-            userStorage.addFriend(userId, friendId);
-        } catch (RuntimeException e) {
-            throw new NotFoundException("Не удалось добавить друга");
+    private void validateUser(int userId) {
+        if (!userStorage.existsById(userId)) {
+            throw new NotFoundException("Пользователь с id=" + userId + " не найден");
         }
     }
 
+    public void addFriend(int userId, int friendId) {
+        validateUser(userId);
+        validateUser(friendId);
+        userStorage.addFriend(userId, friendId);
+        eventService.addEvent(userId, EventType.FRIEND, Operation.ADD, friendId);
+
+    }
+
     public void removeFriend(int userId, int friendId) {
-        getById(userId);
-        getById(friendId);
+        validateUser(userId);
+        validateUser(friendId);
         userStorage.removeFriend(userId, friendId);
+        eventService.addEvent(userId, EventType.FRIEND, Operation.REMOVE, friendId);
+
     }
 
     public List<User> getFriends(int userId) {
-        getById(userId);
+        validateUser(userId);
         return userStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(int userId, int otherId) {
-        getById(userId);
-        getById(otherId);
-        List<User> friends1 = getFriends(userId);
-        List<User> friends2 = getFriends(otherId);
+        validateUser(userId);
+        validateUser(otherId);
+        return userStorage.getCommonFriends(userId, otherId);
+    }
 
-        friends1.retainAll(friends2);
-        return friends1;
+    public void deleteUser(int userId) {
+        getById(userId);
+        userStorage.delete(userId);
+    }
+
+    public List<Film> getRecommendations(int userId) {
+        getById(userId);
+        return filmService.getRecommendations(userId);
     }
 
     private void validateUser(User user) {
         if (user.getLogin() == null || user.getLogin().isBlank()) {
             throw new IllegalArgumentException("Логин не может быть пустым");
         }
-
         if (user.getLogin().contains(" ")) {
             throw new IllegalArgumentException("Логин не должен содержать пробелы");
         }
-
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
-
         if (user.getBirthday() != null && user.getBirthday().isAfter(LocalDate.now())) {
             throw new IllegalArgumentException("Дата рождения не может быть в будущем");
         }
+    }
+
+    public boolean existsById(int id) {
+        return userStorage.existsById(id);
     }
 }

@@ -63,6 +63,24 @@ public class UserDbStorage implements UserStorage {
         return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
     }
 
+    public Optional<User> getByIdOptional(int id) {
+        String sql = "SELECT id, email, login, name, birthday FROM users WHERE id = ?";
+        List<User> result = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            User u = new User();
+            u.setId(rs.getInt("id"));
+            u.setEmail(rs.getString("email"));
+            u.setLogin(rs.getString("login"));
+            u.setName(rs.getString("name"));
+            u.setBirthday(rs.getDate("birthday").toLocalDate());
+            return u;
+        }, id);
+
+        if (result.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(result.get(0));
+    }
+
     @Override
     public List<User> getAll() {
         String sql = "SELECT id, email, login, name, birthday FROM users";
@@ -77,21 +95,25 @@ public class UserDbStorage implements UserStorage {
         });
     }
 
-
     @Override
-    public void addFriend(int userId, int friendId) {
+    public boolean addFriend(int userId, int friendId) {
         String checkSql = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
         Integer count = jdbcTemplate.queryForObject(checkSql, Integer.class, userId, friendId);
-        if (count != null && count > 0) return;
 
-        String sql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
-        jdbcTemplate.update(sql, userId, friendId);
+        if (count != null && count > 0) {
+            return false;
+        }
+
+        String insertSql = "INSERT INTO friendships (user_id, friend_id) VALUES (?, ?)";
+        jdbcTemplate.update(insertSql, userId, friendId);
+
+        return true;
     }
 
     @Override
-    public void removeFriend(int userId, int friendId) {
-        String sql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
-        jdbcTemplate.update(sql, userId, friendId);
+    public boolean removeFriend(int userId, int friendId) {
+        String deleteSql = "DELETE FROM friendships WHERE user_id = ? AND friend_id = ?";
+        return jdbcTemplate.update(deleteSql, userId, friendId) > 0;
     }
 
     @Override
@@ -120,5 +142,18 @@ public class UserDbStorage implements UserStorage {
             u.setBirthday(rs.getDate("birthday").toLocalDate());
             return u;
         }, userId, otherId);
+    }
+
+    @Override
+    public void delete(int userId) {
+        String sql = "DELETE FROM users WHERE id = ?";
+        jdbcTemplate.update(sql, userId);
+    }
+
+    @Override
+    public boolean existsById(int id) {
+        String sql = "SELECT COUNT(*) FROM users WHERE id = ?";
+        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
+        return count != null && count > 0;
     }
 }
