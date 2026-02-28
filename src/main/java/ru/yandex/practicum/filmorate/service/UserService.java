@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.EventType;
@@ -17,7 +16,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final JdbcTemplate jdbcTemplate;
     private final FilmService filmService;
     private final UserDbStorage userStorage;
     private final EventService eventService;
@@ -101,8 +99,6 @@ public class UserService {
     }
 
     public boolean existsById(int id) {
-        String sql = "SELECT COUNT(*) FROM users WHERE id=?";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
-        return count > 0;
+        return userStorage.existsById(id);
     }
 }

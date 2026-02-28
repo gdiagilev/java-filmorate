@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.*;
@@ -15,12 +14,12 @@ import java.util.*;
 public class FilmService {
 
     private static final LocalDate CINEMA_BIRTHDAY = LocalDate.of(1895, 12, 28);
-    private final JdbcTemplate jdbcTemplate;
+
     private final FilmStorage filmStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
     private final DirectorStorage directorStorage;
-    private final EventService eventService;
+    private final EventService eventStorage;
     private final UserStorage userStorage;
 
     public Film create(Film film) {
@@ -80,7 +79,7 @@ public class FilmService {
         validateUserExists(userId);
 
         filmStorage.addLike(filmId, userId);
-        eventService.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
+        eventStorage.addEvent(userId, EventType.LIKE, Operation.ADD, filmId);
 
     }
 
@@ -89,7 +88,7 @@ public class FilmService {
         validateUserExists(userId);
 
         filmStorage.removeLike(filmId, userId);
-        eventService.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
+        eventStorage.addEvent(userId, EventType.LIKE, Operation.REMOVE, filmId);
 
     }
 
@@ -199,8 +198,6 @@ public class FilmService {
     }
 
     public boolean existsById(int id) {
-        String sql = "SELECT COUNT(*) FROM films WHERE id=?";
-        Integer count = jdbcTemplate.queryForObject(sql, Integer.class, id);
-        return count > 0;
+        return filmStorage.existsById(id);
     }
 }

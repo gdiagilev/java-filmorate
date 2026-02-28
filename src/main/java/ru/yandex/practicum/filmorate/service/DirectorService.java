@@ -14,19 +14,11 @@ public class DirectorService {
     private final DirectorStorage directorStorage;
 
     public Director create(Director director) {
-        if (director.getName() == null || director.getName().isBlank()) {
-            throw new IllegalArgumentException("Имя и фамилия режиссёра не могут быть пустыми");
-        }
-
         return directorStorage.create(director);
     }
 
     public Director update(Director director) {
         directorStorage.getById(director.getId());
-        if (director.getName() == null || director.getName().isBlank()) {
-            throw new IllegalArgumentException("Имя и фамилия режиссёра не могут быть пустыми");
-        }
-
         return directorStorage.update(director);
     }
 
